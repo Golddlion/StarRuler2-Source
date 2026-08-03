@@ -1,0 +1,22 @@
+Trait: HumanGovernment
+	Name: #TRAIT_HUMANGOVERNMENT
+	Description: #TRAIT_HUMANGOVERNMENT_DESC
+	Category: Government
+	Order: 0
+
+	Icon: StatusWar
+	Color: #3447c7
+
+	Default: True
+	Unique: Government
+
+	SpawnShip(Scout)
+
+	//Flat starting Energy stockpile (Minerals' equivalent flat start is set
+	//once for all empires in empire.as's init(), via modTotalBudget).
+	AddEnergy(50, Modified = False)
+
+	InHomeSystem( MakeAsteroid(Resource = None) )
+	InRandomAdjacentSystem( MakeAsteroid(Resource = None) )
+	InRandomAdjacentSystem( MakeAsteroid(Resource = None) )
+	InRandomAdjacentSystem( MakeAsteroid(Resource = None) )

@@ -1,0 +1,4 @@
+Name: Our SciFi Mod
+	Base Mod: False
+	Derives From: base
+	Listed: True

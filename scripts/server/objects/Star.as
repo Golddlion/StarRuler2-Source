@@ -1,3 +1,5 @@
+#include "include/resource_constants.as"
+
 import regions.regions;
 import saving;
 import systems;
@@ -6,6 +8,17 @@ LightDesc lightDesc;
 
 tidy class StarScript {
 	bool hpDelta = false;
+	StrategicIconNode@ icon;
+	double baseEnergy = -1.0;
+	double turnTimer = 0.0;
+
+	void makeIcon(Star& star) {
+		@icon = StrategicIconNode();
+		icon.establish(star, 0.02, spritesheet::ResourceIcon, 2);
+		icon.memorable = true;
+		if(star.region !is null)
+			star.region.addStrategicIcon(-1, star, icon);
+	}
 
 	void syncInitial(const Star& star, Message& msg) {
 		msg << float(star.temperature);
@@ -18,8 +31,10 @@ tidy class StarScript {
 		file << cast<Savable>(star.Orbit);
 		file << star.Health;
 		file << star.MaxHealth;
+		file << cast<Savable>(star.Resources);
+		file << cast<Savable>(star.SurfaceComponent);
 	}
-	
+
 	void load(Star& star, SaveFile& file) {
 		loadObjectStates(star, file);
 		file >> star.temperature;
@@ -53,6 +68,9 @@ tidy class StarScript {
 			file >> star.MaxHealth;
 		}
 
+		file >> cast<Savable>(star.Resources);
+		file >> cast<Savable>(star.SurfaceComponent);
+
 		lightDesc.position = vec3f(star.position);
 		lightDesc.radius = star.radius;
 		lightDesc.diffuse = node.color * 1.0f;
@@ -85,6 +103,9 @@ tidy class StarScript {
 		Node@ node = star.getNode();
 		if(node !is null)
 			node.hintParentObject(star.region, false);
+		star.resourcesPostLoad();
+		star.surfacePostLoad();
+		makeIcon(star);
 	}
 	
 	void postInit(Star& star) {
@@ -93,6 +114,20 @@ tidy class StarScript {
 		if(star.temperature == 0.0)
 			soundRadius *= 10.0;
 		addAmbientSource(CURRENT_PLAYER, "star_rumble", star.id, star.position, soundRadius);
+
+		//Suns get exactly one slot, restricted to the Star Harvester building
+		//(see buildBuilding()'s star-only check in SurfaceComponent.as).
+		star.initSurface(1, 1, 0, 0, 0, uint(-1));
+
+		//Vanilla stars have no clickable icon at all (never ownable before);
+		//give them one so they can be selected/managed like other bodies.
+		makeIcon(star);
+	}
+
+	bool onOwnerChange(Star& star, Empire@ prevOwner) {
+		star.changeResourceOwner(prevOwner);
+		star.changeSurfaceOwner(prevOwner);
+		return false;
 	}
 
 	void dealStarDamage(Star& star, double amount) {
@@ -105,6 +140,12 @@ tidy class StarScript {
 	}
 
 	void destroy(Star& star) {
+		if(icon !is null) {
+			if(star.region !is null)
+				star.region.removeStrategicIcon(-1, icon);
+			icon.markForDeletion();
+			@icon = null;
+		}
 		if(!game_ending) {
 			double explRad = star.radius;
 			if(star.temperature == 0.0) {
@@ -128,6 +169,7 @@ tidy class StarScript {
 			if(star.region !is null)
 				star.region.addSystemDPS(star.MaxHealth * 0.12);
 		}
+		star.destroySurface();
 		leaveRegion(star);
 	}
 	
@@ -146,6 +188,25 @@ tidy class StarScript {
 		if(reg !is null && obj.temperature > 0)
 			mask = reg.ExploredMask.value;
 		obj.donatedVision = mask;
+
+		obj.resourceTick(time);
+		if(obj.owner !is null && obj.owner !is defaultEmpire) {
+			obj.surfaceTick(time);
+
+			//Design doc: an owned star/sun has its own flat per-turn base
+			//income (0 Minerals, random 10-20 Energy -- energy specialized).
+			//Not routed through modResource(TR_Energy, ...): see the
+			//matching comment in Planet.as for why that path accrues
+			//Energy roughly 30x too fast. Uses the direct
+			//modEnergyStored() + turn timer pattern instead.
+			if(baseEnergy < 0.0)
+				baseEnergy = double(randomi(10, 20));
+			turnTimer += time;
+			if(turnTimer >= TURN_LENGTH) {
+				turnTimer -= TURN_LENGTH;
+				obj.owner.modEnergyStored(baseEnergy);
+			}
+		}
 
 		return 1.0;
 	}

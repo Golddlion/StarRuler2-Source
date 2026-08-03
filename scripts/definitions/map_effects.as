@@ -402,10 +402,13 @@ class MakePlanet : MapHook {
 		const Biome@ biome2 = getDistributedBiome();
 		const Biome@ biome3 = getDistributedBiome();
 		
-		//Figure out planet size
+		//Figure out planet size (still used for health scaling below)
 		double sizeFact = clamp(radius / 10.0, 0.1, 5.0);
-		int gridW = round(AVG_PLANET_GRID_WIDTH * sizeFact);
-		int gridH = round(AVG_PLANET_GRID_HEIGHT * sizeFact);
+
+		//Our game uses a fixed slot count instead of a radius-scaled grid:
+		//5 slots for a full planet, 3 for a moon (see MakeMoon below).
+		int gridW = 5;
+		int gridH = 1;
 
 		vec2d givenGrid = arguments[3].fromPosition2D();
 		if(givenGrid.x > 0)

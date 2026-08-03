@@ -780,11 +780,13 @@ class GalaxyTab : Tab {
 			return true;
 		}
 
-		/*Star@ star = cast<Star>(object);*/
-		/*if(star !is null) {*/
-		/*	openSystemOverlay(star.region);*/
-		/*	return true;*/
-		/*}*/
+		//Stars and asteroids have our buildable slot surface but no LeaderAI,
+		//so they fall through every other check below; open the same manage
+		//panel planets use directly.
+		if((object.isStar || object.isAsteroid) && object.hasSurfaceComponent) {
+			openManage(object);
+			return true;
+		}
 
 		if(object.hasLeaderAI) {
 			if(object.owner.controlled && !object.hasConstruction)

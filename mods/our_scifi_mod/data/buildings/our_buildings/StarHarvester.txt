@@ -1,0 +1,21 @@
+Building: StarHarvester
+	Name: #BLD_STARHARVESTER
+	Description: #BLD_STARHARVESTER_DESC
+	Sprite: Factory
+
+	Category: Production
+
+	//Not in the design doc's structure table directly (stars/suns are listed
+	//as producing energy passively), but we implemented star output as a
+	//buildable structure like the others. Priced proportionately: 5x an
+	//Energy Harvester's cost for 10x its output, no upkeep.
+	Size: 1x1
+	Base Cost: 10
+	Tile Cost: 0
+	Base Maintenance: 0
+	Tile Maintenance: 0
+	Build Time: 60
+
+	RequireNotTrait(Ancient)
+
+	AddResource(Energy, 20)

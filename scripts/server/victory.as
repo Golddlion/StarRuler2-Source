@@ -120,7 +120,11 @@ void tick(double time) {
 			teams.insert(other.team);
 
 		if(other.Victory == 0) {
-			if(other.TotalPlanets.value == 0)
+			//Win condition is "destroy all of the enemy's units", not the
+			//vanilla "enemy owns zero planets" -- see the matching comment
+			//in empire_rankings.as::updateEmp() for why, including the
+			//gameTime >= 30 startup grace period.
+			if(gameTime >= 30.0 && other.TotalMilitary <= 0.0)
 				other.Victory = -1;
 			else if(other.SubjugatedBy !is null)
 				other.Victory = -2;

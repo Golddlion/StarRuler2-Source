@@ -22,6 +22,7 @@ import InfoBar@ makePlanetInfoBar(IGuiElement@ parent, Object@ obj) from "overla
 import InfoBar@ makeShipInfoBar(IGuiElement@ parent, Object@ obj) from "overlays.ShipInfoBar";
 import InfoBar@ makeAsteroidInfoBar(IGuiElement@ parent, Object@ obj) from "overlays.AsteroidInfoBar";
 import InfoBar@ makeArtifactInfoBar(IGuiElement@ parent, Object@ obj) from "overlays.ArtifactInfoBar";
+import InfoBar@ makeStarInfoBar(IGuiElement@ parent, Object@ obj) from "overlays.StarInfoBar";
 import void toggleSupportOverlay(Object@ obj) from "tabs.GalaxyTab";
 import void openOverlay(Object@ obj) from "tabs.GalaxyTab";
 
@@ -655,5 +656,7 @@ InfoBar@ createInfoBar(IGuiElement@ parent, Object& obj) {
 		return makeAsteroidInfoBar(parent, obj);
 	if(obj.isArtifact)
 		return makeArtifactInfoBar(parent, obj);
+	if(obj.isStar)
+		return makeStarInfoBar(parent, obj);
 	return null;
 }

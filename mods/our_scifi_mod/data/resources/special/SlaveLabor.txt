@@ -1,0 +1,6 @@
+//Intentionally emptied out: see data/resources/unique/UniqueResearch.txt for
+//the reasoning. Leaked as a native asteroid resource during live testing
+//(Artificial:True resources appear vulnerable to the same native/engine
+//placement bug the "Unique" resources had). Only referenced by the vanilla
+//Enslave ability (data/abilities/common/Enslave.txt), which isn't granted to
+//any of our fixed ship designs, so nothing reachable in our mod uses this.

@@ -1016,6 +1016,41 @@ class GrantAbility : EmpireTrigger {
 #section all
 };
 
+class GrantFleetShieldBonus : EmpireTrigger {
+	Document doc("Grant a flat bonus shield capacity to every existing flagship the empire owns (new ships pick this up on their own once built).");
+	Argument amount(AT_Decimal, doc="Amount of bonus shield capacity to grant.");
+
+#section server
+	void activate(Object@ obj, Empire@ emp) const override {
+		if(emp is null)
+			return;
+		for(uint i = 0, cnt = emp.objectCount; i < cnt; ++i) {
+			Ship@ ship = cast<Ship>(emp.objects[i]);
+			if(ship !is null && ship.hasLeaderAI)
+				ship.modBonusShield(arguments[0].decimal);
+		}
+	}
+#section all
+};
+
+class GrantFleetAbility : EmpireTrigger {
+	Document doc("Grant an activatable ability to every existing flagship the empire owns (new ships pick this up on their own once built).");
+	Argument type(AT_Ability, doc="Type of ability to grant.");
+
+#section server
+	void activate(Object@ obj, Empire@ emp) const override {
+		if(emp is null)
+			return;
+		for(uint i = 0, cnt = emp.objectCount; i < cnt; ++i) {
+			Ship@ ship = cast<Ship>(emp.objects[i]);
+			if(ship !is null && ship.hasLeaderAI)
+				ship.addAbility(arguments[0].integer);
+		}
+	}
+#section all
+};
+
+
 
 class GrantRegionVision : BonusEffect {
 	Document doc("Grant vision over the target region.");

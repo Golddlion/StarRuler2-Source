@@ -1,0 +1,6 @@
+//Intentionally emptied out: see UniqueResearch.txt in data/resources/unique/
+//for the reasoning. Marenium only ever unlocked the vanilla MareniumGen ship
+//subsystem (data/subsystems/flagships/generators/MareniumGen.txt) for the
+//interactive blueprint editor, which we've removed in favor of fixed preset
+//designs -- nothing in our mod's designs references MareniumGen, so there's
+//nothing left for this resource to do.

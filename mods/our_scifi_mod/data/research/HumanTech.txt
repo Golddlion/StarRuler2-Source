@@ -1,0 +1,30 @@
+Technology: HumanRoot
+	Name: #R_HUMAN_ROOT
+	Description: #R_HUMAN_ROOT_DESC
+	Class: Special
+	Icon: TechScience
+	Color: #aaaaaa
+
+	Default Unlock: True
+
+Technology: HumanShields
+	Name: #R_HUMAN_SHIELDS
+	Description: #R_HUMAN_SHIELDS_DESC
+	Class: Unlock
+
+	Icon: FissionReactor
+	Color: #429cff
+
+	//Design doc: "every research project completes in one turn". A single
+	//Research Lab produces Research at TILE_RESEARCH_RATE (0.75/sec), so a
+	//Point Cost of 45 finishes in exactly one 60s turn.
+	Point Cost: 45
+	Time Cost: 60
+
+	UnlockTag(HumanShieldsResearched)
+	GrantFleetShieldBonus(50)
+	GrantFleetAbility(HumanEmergencyShields)
+
+Grid: HumanGrid
+	HumanRoot: 0,0
+	HumanShields: 1,0

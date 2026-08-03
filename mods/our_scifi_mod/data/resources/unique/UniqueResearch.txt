@@ -1,0 +1,6 @@
+//Intentionally emptied out: this resource doesn't fit our simplified
+//Minerals+Energy economy. Previous attempts at zeroing its Distribution/
+//Asteroid Frequency fields didn't reliably stop it from still being
+//placed on some asteroids, so removing the resource type definition
+//entirely instead -- nothing else in the base game or this mod
+//references "UniqueResearch" by name, so there's nothing to break.

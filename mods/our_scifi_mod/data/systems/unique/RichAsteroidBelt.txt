@@ -1,0 +1,20 @@
+System: RichAsteroidBelt
+	Frequency: 0.01
+	Unique: Galaxy
+
+	MakeStar(Temperature = 4520, Radius = 74)
+	AddQuality(-300)
+
+	//No native resource types anywhere in this mod (see BaseSystem.txt).
+	//MakeAsteroidBelt() defaults its cargo to Ore with no "null" option, so
+	//use plain MakeAsteroid(Resource = None) repeats instead (scattered rather than
+	//ring-arranged, but resource-free).
+	MakePlanet(null)
+	Repeat(7)
+		MakeAsteroid(Resource = None)
+
+	Repeat(2)
+		MakePlanet(null)
+
+	Repeat(2)
+		MakeAsteroid(Resource = None)

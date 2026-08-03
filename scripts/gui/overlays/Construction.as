@@ -72,6 +72,11 @@ class ConstructionOverlay : GuiOverlay, ConstructionParent {
 	}
 
 	void startBuild(const BuildingType@ type) {
+		//Stars/asteroids/stations have no visual tile grid to click a
+		//position on (that requires the full planet-surface sync only
+		//Planet's widget requests). Our grids are simple single-row strips,
+		//so just place into the next slot after however many are already built.
+		obj.buildBuilding(type.id, vec2i(obj.getBuildingCount(), 0));
 	}
 
 	Object@ get_object() {
@@ -406,7 +411,7 @@ class ConstructionDisplay : DisplayBox {
 			modulesList.clearSections();
 			if(obj is null || obj.owner !is playerEmpire)
 				return;
-			if(obj.hasConstruction && obj.hasSurfaceComponent && obj.owner.ImperialBldConstructionRate > 0.001) {
+			if(obj.hasSurfaceComponent && obj.surfaceGridSize.x > 0 && (!obj.hasConstruction || obj.owner.ImperialBldConstructionRate > 0.001)) {
 				array<GuiListbox@> cats;
 				array<string> catNames;
 
@@ -415,6 +420,11 @@ class ConstructionDisplay : DisplayBox {
 					if(type.civilian)
 						continue;
 					if(!type.canBuildOn(obj, ignoreState = true))
+						continue;
+					//Star Harvester is a sun-only building; everything else
+					//can't be built on a sun.
+					bool isStarHarvester = type.ident == "StarHarvester";
+					if(obj.isStar != isStarHarvester)
 						continue;
 
 					GuiListbox@ list;
@@ -589,7 +599,7 @@ class ConstructionDisplay : DisplayBox {
 				hasConstructions = false;
 				constructionsButton.disabled = true;
 			}
-			if(obj.laborIncome == 0 && hasConstructions && shipsButton.pressed) {
+			if((!obj.hasConstruction || obj.laborIncome == 0) && hasConstructions && shipsButton.pressed) {
 				shipsList.visible = false;
 				shipsButton.pressed = false;
 				constructionsButton.pressed = true;
@@ -827,7 +837,7 @@ class ConstructionDisplay : DisplayBox {
 				if(obj.owner is playerEmpire) {
 					if(hasShips != obj.hasConstruction && obj.canBuildShips
 							|| hasOrbitals != obj.hasConstruction && obj.canBuildOrbitals
-							|| hasBuildings != obj.hasConstruction && obj.hasSurfaceComponent && obj.owner.ImperialBldConstructionRate > 0.01)
+							|| hasBuildings != obj.hasConstruction && obj.hasSurfaceComponent && obj.surfaceGridSize.x > 0 && obj.owner.ImperialBldConstructionRate > 0.01)
 						updateBuildList(true);
 					else
 						updateBuildList(false);
@@ -843,7 +853,7 @@ class ConstructionDisplay : DisplayBox {
 				buttonBox.alignment.top.pixels = Q_HEIGHT+8;
 				buttonBox.alignment.bottom.pixels = Q_HEIGHT+44;
 
-				if(obj.hasSurfaceComponent) {
+				if(obj.hasSurfaceComponent && obj.surfaceGridSize.x > 0) {
 					buildingsButton.visible = true;
 					btnCount += 1;
 				}
@@ -920,15 +930,15 @@ class ConstructionDisplay : DisplayBox {
 			}
 
 			double curLabor = 0;
-			if(obj.owner is playerEmpire)
+			if(obj.owner is playerEmpire && obj.hasConstruction)
 				curLabor = obj.laborIncome;
 			labor.text = formatMinuteRate(curLabor, " "+locale::RESOURCE_LABOR);
 
 			double curStored = 0;
-			if(obj.owner is playerEmpire)
+			if(obj.owner is playerEmpire && obj.hasConstruction)
 				curStored = obj.currentLaborStored;
 			double storCap = 0;
-			if(obj.owner is playerEmpire)
+			if(obj.owner is playerEmpire && obj.hasConstruction)
 				storCap = obj.laborStorageCapacity;
 			if(obj.hasConstruction && (curStored > 0.001 || storCap > 0.001)) {
 				storageBox.visible = true;
@@ -958,7 +968,7 @@ class ConstructionDisplay : DisplayBox {
 			repeatButton.pressed = obj.owner is playerEmpire && obj.isRepeating;
 
 			auto@ drydock = getOrbitalModule("DryDock");
-			drydockButton.visible = obj.owner is playerEmpire && obj.canBuildShips && obj.canBuildOrbitals && drydock !is null && drydock.canBuildBy(obj);
+			drydockButton.visible = obj.owner is playerEmpire && obj.hasConstruction && obj.canBuildShips && obj.canBuildOrbitals && drydock !is null && drydock.canBuildBy(obj);
 
 			updateAbsolutePosition();
 		}
@@ -1231,7 +1241,7 @@ class OrbitalTarget : PointTargeting {
 			}
 			else if(def !is null)
 				laborCost = def.laborCost * obj.owner.OrbitalLaborCostFactor;
-			double laborIncome = max(obj.laborIncome, 0.01);
+			double laborIncome = max(obj.hasConstruction ? obj.laborIncome : 0.0, 0.01);
 
 			Orbital@ orbFrame = cast<Orbital>(hoveredObject);
 			if(orbFrame !is null && orbFrame.getValue(OV_FRAME_Usable) == 0.0)
@@ -1542,7 +1552,8 @@ class BuildElement : GuiListElement {
 		else if(building !is null) {
 			nameText = building.name;
 			build = building.buildCostEst * buildAt.owner.BuildingCostFactor;
-			build *= buildAt.constructionCostMod;
+			if(buildAt.hasConstruction)
+				build *= buildAt.constructionCostMod;
 			maintain = building.maintainCostEst;
 			if(building.laborCost > 0)
 				labor = building.laborCost;
@@ -1630,10 +1641,11 @@ class BuildElement : GuiListElement {
 
 		if(labor != 0) {
 			laborText = standardize(labor, true);
+			double laborIncome = buildAt.hasConstruction ? buildAt.laborIncome : 0.0;
 			if(isSupport)
-				timeText = formatTimeRate(labor, buildAt.laborIncome*(float(buildAt.supportBuildSpeed)/100.f));
+				timeText = formatTimeRate(labor, laborIncome*(float(buildAt.supportBuildSpeed)/100.f));
 			else
-				timeText = formatTimeRate(labor, buildAt.laborIncome);
+				timeText = formatTimeRate(labor, laborIncome);
 		}
 		else if(time != 0) {
 			laborText = "";

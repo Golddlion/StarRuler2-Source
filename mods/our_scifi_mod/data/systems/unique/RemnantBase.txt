@@ -1,0 +1,21 @@
+System: RemnantBase
+	Frequency: 0.01
+	Unique: Global
+
+	MakeStar(Temperature = 5778, Radius = 75)
+	AddQuality(+500)
+
+	//No native resource types anywhere in this mod (see BaseSystem.txt).
+	Repeat(4)
+		MakePlanet(null)
+	MakePlanet(null)
+	MakePlanet(null)
+
+	Repeat(4)
+		MakeAsteroid(Resource = None)
+
+	Repeat(4)
+		MakeCreepCamp()
+	MakeCreepCamp(DryDock)
+
+	AddAdjacentAnomalies(4)

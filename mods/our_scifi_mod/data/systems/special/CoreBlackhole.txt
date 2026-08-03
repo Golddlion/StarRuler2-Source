@@ -1,0 +1,11 @@
+System: CoreBlackhole
+	MakeBlackhole(Radius = 20.0)
+
+	//No native resource types anywhere in this mod (see BaseSystem.txt).
+	//MakeAsteroidBelt() defaults its cargo to Ore with no "null" option, so
+	//use plain MakeAsteroid(Resource = None) repeats instead (scattered rather than
+	//ring-arranged, but resource-free).
+	MakePlanet(null, Orbit Spacing = 700:750)
+	Repeat(6)
+		MakeAsteroid(Resource = None)
+	MakePlanet(null, Orbit Spacing = 850:900)

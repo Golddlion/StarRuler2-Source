@@ -1,0 +1,41 @@
+//Discoverable/repairable derelict stations found out in the galaxy, per the
+//design doc: investigating one lets the player choose between a research
+//burst, bonus warships, or claiming the hulk itself as a new station with
+//build slots (via the existing Orbital SlotComponent/initSurface wiring).
+Anomaly: DerelictStation
+	Name: #ANOMALY_DERELICT_STATION_NAME
+	Description: #ANOMALY_NAR_DERELICT_STATION
+
+	Frequency: 1.2
+	Scan Time: 60
+
+	State: Initial
+		Narrative: #ANOMALY_NAR_DERELICT_STATION_FOUND
+
+		Model: TyrantFlagshipMedium
+		Material: TyrantPBRAdvanced
+
+		Choice: Salvage
+		Choice: Crew
+		Choice: Repair
+
+	Option: Salvage
+		Icon: ResourceIcon::4
+		Description: #ANOMALY_DERELICT_STATION_SALVAGE
+		Safe: True
+
+		AddResearchPoints(400:800, Modified = False, Penalized = False)
+
+	Option: Crew
+		Icon: CardCategoryIcons::2
+		Description: #ANOMALY_DERELICT_STATION_CREW
+		Safe: True
+
+		SpawnSupports(Small Warship, 2, Creep Design = False)
+
+	Option: Repair
+		Icon: OrbitalIcons::7
+		Description: #ANOMALY_DERELICT_STATION_REPAIR
+		Safe: True
+
+		SpawnOrbital(SupplyDepot, Free = True)

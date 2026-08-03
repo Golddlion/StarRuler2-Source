@@ -730,3 +730,13 @@ R_BASE_MATERIAL: Base Material
 R_BASE_MATERIAL_DESC: <<
 	Generates 10 Base Material per minute. Can be exported to other planets.
 >>
+
+OURMINERALS: Minerals
+OURMINERALS_DESC: <<
+	This world is producing Minerals from its buildings.
+>>
+
+OURENERGY: Energy
+OURENERGY_DESC: <<
+	This world is producing Energy from its buildings.
+>>

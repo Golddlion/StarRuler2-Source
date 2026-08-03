@@ -7,6 +7,24 @@ import bool getCheatsEverOn() from "cheats";
 
 const double COLONYSHIP_BASE_ACCEL = 5.5;
 
+//Purely-cosmetic resource types (Distribution: 0, never natively spawned)
+//used to show a map icon for our own building-driven Minerals/Energy
+//production; mirrors the identical helper in the server SurfaceComponent.
+const ResourceType@ ourMineralsIconType;
+const ResourceType@ ourEnergyIconType;
+
+const ResourceType@ getOurMineralsIconType() {
+	if(ourMineralsIconType is null)
+		@ourMineralsIconType = getResource("OurMinerals");
+	return ourMineralsIconType;
+}
+
+const ResourceType@ getOurEnergyIconType() {
+	if(ourEnergyIconType is null)
+		@ourEnergyIconType = getResource("OurEnergy");
+	return ourEnergyIconType;
+}
+
 tidy class SurfaceComponent : Component_SurfaceComponent {
 	uint biome0, biome1, biome2;
 	vec2u originalSurfaceSize;
@@ -389,6 +407,12 @@ tidy class SurfaceComponent : Component_SurfaceComponent {
 		if(icon !is null) {
 			icon.visible = obj.isVisibleTo(playerEmpire);
 			updateIconVision(obj);
+			//Keep the map icon in sync with our own building production
+			//(grid.resources[] changes whenever a Mineral Mine/Energy
+			//Harvester finishes or is lost, unlike native resource deposits
+			//which are static once placed).
+			if(obj.nativeResourceCount == 0)
+				updateIcon(obj);
 
 			if(wasMoving != obj.isMoving) {
 				if(wasMoving) {
@@ -614,8 +638,27 @@ tidy class SurfaceComponent : Component_SurfaceComponent {
 							DecayTimer > 0.0);
 				}
 				else {
-					icon.setResource(uint(-1));
-					icon.setState(false, false, true, false);
+					//No native resource deposit: show our own building
+					//production instead, if this world has any.
+					double minerals = grid.resources.length > TR_Money ? grid.resources[TR_Money] : 0.0;
+					double energy = grid.resources.length > TR_Energy ? grid.resources[TR_Energy] : 0.0;
+					if(minerals > 0.0 || energy > 0.0) {
+						//Prefer Minerals whenever a body produces any (see
+						//matching comment in the server SurfaceComponent.as).
+						const ResourceType@ ourType = minerals > 0.0 ? getOurMineralsIconType() : getOurEnergyIconType();
+						if(ourType !is null) {
+							icon.setResource(ourType.id);
+							icon.setState(false, false, true, false);
+						}
+						else {
+							icon.setResource(uint(-1));
+							icon.setState(false, false, true, false);
+						}
+					}
+					else {
+						icon.setResource(uint(-1));
+						icon.setState(false, false, true, false);
+					}
 				}
 			}
 			else if(obj.isKnownTo(playerEmpire) && playerEmpire.valid) {

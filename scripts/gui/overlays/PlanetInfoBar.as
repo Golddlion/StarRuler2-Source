@@ -350,7 +350,9 @@ class PlanetInfoBar : InfoBar {
 
 			//Update condition display
 			levelBox.visible = colonized;
-			popBox.visible = colonized && owner.HasPopulation != 0;
+			//Our game hides population/society management; it's kept running
+			//in the background but never shown to the player.
+			popBox.visible = false;
 			if(colonized || statuses.length == 0) {
 				if(statuses.length != 0) {
 					uint prevCnt = statusIcons.length, cnt = statuses.length;

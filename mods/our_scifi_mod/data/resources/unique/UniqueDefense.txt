@@ -1,0 +1,2 @@
+//Intentionally emptied out: see UniqueResearch.txt in this same directory
+//for the reasoning. Nothing else references "UniqueDefense" by name.

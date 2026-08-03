@@ -1,0 +1,19 @@
+Building: SpaceportUnit
+	Name: #BLD_SPACEPORTUNIT
+	Description: #BLD_SPACEPORTUNIT_DESC
+	Sprite: SpaceElevator
+
+	Category: Infrastructure
+
+	//Design doc: Spaceport costs 5 minerals, enables ship production from the
+	//following turn, no upkeep, finishes one turn (60s) after being ordered.
+	Size: 1x1
+	Base Cost: 5
+	Tile Cost: 0
+	Base Maintenance: 0
+	Tile Maintenance: 0
+	Build Time: 60
+
+	RequireNotTrait(Ancient)
+
+	ModSupportBuildSpeed(+0.3)

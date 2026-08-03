@@ -1,0 +1,13 @@
+System: BinarySystem
+	Inherit: BaseSystem
+	Frequency: 0.1
+
+	MakeStar(Temperature = 7000:13000, Radius = 55:70, Suffix = A, Moves = True)
+		SetupOrbit(Radius = 150, Orbit Pct = 0.4)
+
+	MakeStar(Temperature = 4000:9000, Radius = 35:60, Suffix = B, Moves = True)
+		SetupOrbit(Radius = 150, Orbit Pct = 0.9)
+
+	//No native resource types anywhere in this mod (see BaseSystem.txt).
+	RepeatModified(4, $PLANET_FREQUENCY)
+		MakePlanet(null)

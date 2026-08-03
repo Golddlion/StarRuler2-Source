@@ -1,8 +1,12 @@
+#include "include/resource_constants.as"
+
 import resources;
 import util.target_search;
 import regions.regions;
 import saving;
 import attributes;
+import abilities;
+import unlock_tags;
 from generic_effects import RegionChangeable, LeaderChangeable;
 from influence_global import giveRandomReward, DiplomacyEdictType;
 from designs import getDesignMesh;
@@ -60,6 +64,7 @@ tidy class ShipScript {
 	const Design@ retrofitTo;
 	const Design@ queuedRetrofit;
 	float timer = 0.f, bpTimer = 0.f;
+	double turnTimer = 0.0;
 	float supplyBonus = 0.f;
 	int disableRegionVision = 0;
 	int holdFire = 0;
@@ -121,6 +126,9 @@ tidy class ShipScript {
 		else {
 			file << false;
 		}
+
+		file << cast<Savable>(ship.SurfaceComponent);
+		file << cast<Savable>(ship.Resources);
 
 		if(ship.hasOrbit) {
 			file << true;
@@ -209,6 +217,9 @@ tidy class ShipScript {
 				file >> cast<Savable>(ship.Construction);
 			}
 		}
+
+		file >> cast<Savable>(ship.SurfaceComponent);
+		file >> cast<Savable>(ship.Resources);
 
 		if(file >= SV_0060) {
 			file >> has;
@@ -332,7 +343,10 @@ tidy class ShipScript {
 			if(node !is null)
 				node.animInvis = true;
 		}
-		
+
+		ship.surfacePostLoad();
+		ship.resourcesPostLoad();
+
 		cacheStats(ship);
 		updateStats(ship);
 		
@@ -375,6 +389,31 @@ tidy class ShipScript {
 			ship.activateStatuses();
 			ship.activateAbilities();
 
+			//Every flagship can attempt to conquer an empty or cleared-out
+			//enemy planet directly, instead of needing a dedicated colonizer.
+			auto@ conquerAbl = getAbilityType("ConquerPlanet");
+			if(conquerAbl !is null)
+				ship.addAbility(conquerAbl.id);
+
+			//Ships built after Human Shields research picks up the bonus
+			//directly; already-existing ships got it retroactively from
+			//GrantFleetShieldBonus when the tech completed.
+			if(ship.owner.isTagUnlocked(getUnlockTag("HumanShieldsResearched"))) {
+				ship.modBonusShield(50.0);
+				auto@ shieldAbl = getAbilityType("HumanEmergencyShields");
+				if(shieldAbl !is null)
+					ship.addAbility(shieldAbl.id);
+			}
+
+			//Same pattern for Rebel Weapon Overcharge: the passive damage
+			//bonus is an automatic retroactive tag modifier, but the
+			//activatable ability still needs granting per-ship.
+			if(ship.owner.isTagUnlocked(getUnlockTag("RebelLasersResearched"))) {
+				auto@ overchargeAbl = getAbilityType("RebelWeaponOvercharge");
+				if(overchargeAbl !is null)
+					ship.addAbility(overchargeAbl.id);
+			}
+
 			if(ship.owner.valid)
 				ship.owner.recordStatDelta(statType(ship), 1);
 			auto@ node = ship.getNode();
@@ -398,6 +437,16 @@ tidy class ShipScript {
 				ship.owner.TotalSupportsActive += 1;
 			}
 		}
+
+		//The Rebel Capitol is a mobile economic home: give it our buildable
+		//slots (mineral/energy/spaceport/research) just like a homeworld.
+		//Every ship carries a SurfaceComponent field (the engine only supports
+		//activate()-on-demand for a fixed set of component types, not this
+		//one), but only the Capitol actually gets initSurface() called, so
+		//every other ship's grid stays at its inert default size of 0x0.
+		const Design@ dsg = ship.blueprint.design;
+		if(dsg !is null && dsg.name == "Capitol")
+			ship.initSurface(3, 1, 0, 0, 0, uint(-1));
 
 		ship.startEffects();
 	}
@@ -549,7 +598,11 @@ tidy class ShipScript {
 		
 		//Update shield stats
 		double maxShield = ship.blueprint.getEfficiencySum(SV_ShieldCapacity);
-		if(maxShield > 0)
+		//Our ship designs have no ShieldGen subsystem hexes (base capacity is
+		//always 0), so bonusShield (granted by Human Shields research/ability
+		//via modBonusShield()) must still count on its own, not only as a
+		//bonus on top of an existing subsystem-derived capacity.
+		if(maxShield > 0 || bonusShield > 0)
 			maxShield += bonusShield;
 		if(maxShield != ship.MaxShield) {
 			if(maxShield == 0) {
@@ -566,6 +619,12 @@ tidy class ShipScript {
 				ship.MaxShield = maxShield;
 				shieldRegen = ship.blueprint.getEfficiencySum(SV_ShieldRegen);
 			}
+			//No ShieldGen subsystem means no design-derived regen either;
+			//give bonus-only shields a slow passive trickle so they still
+			//recover between fights, matching the design doc's "regenerates
+			//each turn cycle" for Human shields.
+			if(shieldRegen <= 0 && bonusShield > 0)
+				shieldRegen = bonusShield * 0.1;
 			shieldDelta = true;
 		}
 
@@ -749,6 +808,10 @@ tidy class ShipScript {
 			ship.destroyStatus();
 		if(ship.hasConstruction)
 			ship.destroyConstruction();
+		//Only the Capitol ever gets initSurface() called; skip the teardown
+		//for every other ship's inert, never-initialized SurfaceComponent.
+		if(ship.surfaceGridSize.x > 0)
+			ship.destroySurface();
 		if(ship.hasAbilities)
 			ship.destroyAbilities();
 			
@@ -788,6 +851,10 @@ tidy class ShipScript {
 			ship.abilityOwnerChange(prevOwner, ship.owner);
 		if(ship.hasStatuses)
 			ship.changeStatusOwner(prevOwner, ship.owner);
+		if(ship.surfaceGridSize.x > 0) {
+			ship.changeResourceOwner(prevOwner);
+			ship.changeSurfaceOwner(prevOwner);
+		}
 		regionOwnerChange(ship, prevOwner);
 		if(ship.hasLeaderAI)
 			ship.leaderChangeOwner(prevOwner, ship.owner);
@@ -1187,6 +1254,19 @@ tidy class ShipScript {
 				ship.statusTick(time);
 			if(ship.hasConstruction)
 				ship.constructionTick(time);
+			if(ship.surfaceGridSize.x > 0 && ship.owner !is null && ship.owner.valid) {
+				ship.resourceTick(time);
+				ship.surfaceTick(time);
+
+				//Capitol's flat per-turn baseline income (see Planet.as for
+				//the equivalent on the Human homeworld).
+				turnTimer += time;
+				if(turnTimer >= TURN_LENGTH) {
+					turnTimer -= TURN_LENGTH;
+					ship.owner.addBonusBudget(1);
+					ship.owner.modEnergyStored(3.0);
+				}
+			}
 		}
 
 		if(d < delay)

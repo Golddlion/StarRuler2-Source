@@ -31,7 +31,15 @@ void updateEmp(Empire& emp) {
 	}
 
 	if(emp.Victory == 0) {
-		if(emp.TotalPlanets.value == 0) {
+		//Win condition is "destroy all of the enemy's units", not the
+		//vanilla "enemy owns zero planets" -- Rebels are designed to never
+		//own a planet at all (mobile Capitol economy instead of a
+		//homeworld), so the vanilla planet check would auto-eliminate them
+		//within seconds of any game that has a second empire. Gated on
+		//gameTime >= 30 as a startup grace period: starting ships take a
+		//few seconds to actually spawn in, and TotalMilitary reads 0 until
+		//they do, which would otherwise auto-eliminate everyone at game start.
+		if(gameTime >= 30.0 && emp.TotalMilitary <= 0.0) {
 			emp.Victory = -1;
 		}
 		else if(emp.SubjugatedBy !is null) {

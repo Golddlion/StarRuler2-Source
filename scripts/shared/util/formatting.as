@@ -86,8 +86,12 @@ string formatMoney(int money, bool colored = false, bool roundUp = true) {
 	int am = abs(money);
 	if(am == 0)
 		text += "0";
+	//Vanilla appended "k" here unconditionally, since its internal money
+	//values were already denominated in thousands; our economy uses small,
+	//literal numbers (a mine grants +2, not +2000), so a bare number is
+	//correct here instead.
 	else if(am < 1000)
-		text += toString(am)+"k";
+		text += toString(am);
 	else if(am < 1000000)
 		text += standardize(double(am) / 1000.0, true, true)+"M";
 	else
@@ -115,8 +119,12 @@ string formatMoneyChange(int money, bool colored = false) {
 	int am = abs(money);
 	if(am == 0)
 		text += "0";
+	//Vanilla appended "k" here unconditionally, since its internal money
+	//values were already denominated in thousands; our economy uses small,
+	//literal numbers (a mine grants +2, not +2000), so a bare number is
+	//correct here instead.
 	else if(am < 1000)
-		text += toString(am)+"k";
+		text += toString(am);
 	else if(am < 1000000)
 		text += toString(double(am) / 1000.0, 2)+"M";
 	else

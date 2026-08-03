@@ -1,0 +1,17 @@
+System: MorphSystem
+	Frequency: 0.01
+	Unique: Global
+
+	MakeStar(Temperature = 5778, Radius = 75)
+
+	//No native resource types anywhere in this mod (see BaseSystem.txt).
+	Repeat(3)
+		MakePlanet(null)
+
+	Repeat(2)
+		MakeAsteroid(Resource = None)
+
+	MakeAnomaly(MorphRed)
+	MakeAnomaly(MorphBlue)
+	MakeAnomaly(MorphGreen)
+	AddAdjacentAnomalies(1)

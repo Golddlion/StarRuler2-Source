@@ -1,0 +1,5 @@
+//Intentionally emptied out: see data/resources/unique/UniqueResearch.txt for
+//the reasoning. This one showed up as a leaked native asteroid resource during
+//live testing despite Distribution: 0 and no Asteroid Frequency set, the same
+//class of native/engine-level placement bug seen with the "Unique" resources.
+//Nothing else references "Synthetics" by name.

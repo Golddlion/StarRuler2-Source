@@ -1,0 +1,12 @@
+//The activatable ("press R") half of Human Shield Technology research --
+//the passive flat shield bonus (GrantFleetShieldBonus/modBonusShield) is
+//always-on; this is a short burst on a cooldown, granted to ships the same
+//way (see GrantFleetAbility in bonus_effects.as and Ship.as postInit).
+Ability: HumanEmergencyShields
+	Name: #ABL_HUMAN_EMERGENCY_SHIELDS
+	Description: #ABL_HUMAN_EMERGENCY_SHIELDS_DESC
+	Icon: FissionReactor * #429cff
+
+	Cooldown: 30
+
+	AddStatusSelf(HumanEmergencyShieldsStatus, Sys.Duration:10)

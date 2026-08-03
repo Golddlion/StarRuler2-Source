@@ -1538,6 +1538,25 @@ class TargetFilterNotInCombat : TargetFilter {
 	}
 };
 
+class TargetFilterNoBuildings : TargetFilter {
+	Document doc("Target cannot have any of our slot buildings still standing on it; they have to be destroyed first before it can be conquered.");
+	Argument object(TT_Object);
+
+	string getFailReason(Empire@ emp, uint index, const Target@ targ) const override {
+		return locale::NTRG_HAS_BUILDINGS;
+	}
+
+	bool isValidTarget(Object@ obj, Empire@ emp, uint index, const Target@ targ) const override {
+		if(index != uint(object.integer))
+			return true;
+		if(targ.obj is null)
+			return false;
+		if(targ.obj.hasSurfaceComponent && targ.obj.getBuildingCount() > 0)
+			return false;
+		return true;
+	}
+};
+
 class TargetFilterCargoStorage : TargetFilter {
 	Document doc("Only allow targets that have cargo storage.");
 	Argument objTarg(TT_Object);

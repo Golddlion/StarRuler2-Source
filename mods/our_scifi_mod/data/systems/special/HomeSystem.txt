@@ -1,0 +1,29 @@
+System: HomeSystem
+	MakeStar(Temperature = 400:13000, Radius = 65:85)
+		BonusHealth(20000000000)
+
+	//No native resource types (Water/Ore/etc) anywhere in this mod: our economy
+	//is entirely Minerals+Energy from our own slot buildings, not vanilla's
+	//native resource/trade system.
+	RepeatHomeworlds()
+		MakePlanet(null, Radius = 10, Grid Size = (18, 11), Conditions = False, Moons = False)
+			BonusHealth(5000000000)
+			//Kept at a minimal trickle so the homeworld still unlocks ship/orbital
+			//construction (gated on any nonzero labor income); our own economy
+			//comes from our custom slot buildings and the flat per-turn baseline
+			//instead of vanilla's population-driven civilian economy.
+			AddResource(Labor, +1)
+			NoNeedPopulationForLevel()
+			ForceUsefulSurface(0.8, Forest)
+
+	MakePlanet(null, Conditions = False, Moons = False)
+	MakePlanet(null, Conditions = False, Moons = False)
+	MakePlanet(null, Conditions = False, Moons = False)
+		MakeMoon()
+	ExpandSystem(-50:100)
+
+	MakeAsteroid(Resource = None)
+	MakeAsteroid(Resource = None)
+
+	AddAdjacentArtifacts(2)
+	MakeAdjacentCreepCamp(SmallCamp, Place Far = True)

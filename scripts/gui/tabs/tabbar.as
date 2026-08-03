@@ -829,13 +829,12 @@ void init() {
 	newTab(defaultTab);
 	switchToTab(defaultTab);
 
-	newTab(createDiplomacyTab());
-	if(hasDLC("Heralds"))
-		newTab(createAttitudesTab());
+	//No diplomacy (removed vanilla influence/senate system), no ship
+	//design browser (we don't let players inspect/redesign ship blueprints),
+	//and no community/wiki tab (external links irrelevant to our standalone
+	//custom game).
 	newTab(createResearchTab());
-	newTab(createDesignOverviewTab());
 	newTab(createPlanetsTab());
-	newTab(createCommunityHome());
 
 	//Bind keybinds
 	keybinds::Global.addBind(KB_TAB_NEW, "tab_new");
@@ -932,12 +931,14 @@ void load(SaveFile& file) {
 
 		switch(cat) {
 			case TC_Galaxy: @t = createGalaxyTab(); break;
-			case TC_Designs: @t = createDesignOverviewTab(); break;
+			//Design browser and Diplomacy tabs are removed from this mod;
+			//skip them if an old save layout still references them.
+			case TC_Designs: break;
 			case TC_Home: @t = createHomeTab(); break;
 			case TC_Research: @t = createResearchTab(); break;
 			case TC_Planets: @t = createPlanetsTab(); break;
-			case TC_Diplomacy: @t = createDiplomacyTab(); break;
-			case TC_Wiki: @t = createCommunityHome(); break;
+			case TC_Diplomacy: break;
+			case TC_Wiki: break;
 			case TC_Attitudes: @t = createAttitudesTab(); break;
 		}
 

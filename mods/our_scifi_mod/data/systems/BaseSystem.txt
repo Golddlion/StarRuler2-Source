@@ -1,0 +1,25 @@
+System: BaseSystem
+	Inherit: BaseRemnants
+	Inherit: BaseAsteroids
+	Inherit: BaseAnomalies
+	Inherit: BaseArtifacts
+
+System: BaseAsteroids
+	//No native resource types (Water/Ore/etc) anywhere in this mod: our
+	//economy is entirely Minerals+Energy from our own slot buildings.
+	//Asteroids still spawn (and still get build slots), just without a
+	//native Cargo/Resource tag.
+	RepeatChance(Chance = $ASTEROID_OCCURANCE, Repeat Modifier = 0.7)
+		MakeAsteroid(Resource = None)
+
+System: BaseAnomalies
+	RepeatChance(Chance = $ANOMALY_OCCURANCE, Repeat Modifier = 0.5)
+		MakeAnomaly()
+
+System: BaseRemnants
+	RepeatQuality(Chance = $REMNANT_OCCURANCE, Repeat Modifier = 0.5, Quality Step = 200)
+		MakeCreepCamp()
+
+System: BaseArtifacts
+	RepeatQuality(Chance = $ARTIFACT_FREQUENCY, Repeat Modifier = 0.25, Quality Step = 200)
+		MakeArtifact()

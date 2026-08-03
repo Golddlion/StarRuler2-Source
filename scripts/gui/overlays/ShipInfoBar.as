@@ -6,7 +6,6 @@ import elements.GuiButton;
 import elements.GuiSprite;
 import elements.GuiProgressbar;
 import elements.GuiGroupDisplay;
-import elements.GuiBlueprint;
 import elements.GuiSkinElement;
 import elements.MarkupTooltip;
 import elements.GuiStatusBox;
@@ -19,16 +18,17 @@ from overlays.Construction import ConstructionOverlay;
 from obj_selection import isSelected, selectObject, clearSelection, addToSelection;
 from tabs.GalaxyTab import zoomTabTo, openOverlay, toggleSupportOverlay;
 
-bool SHIP_INFOBAR_EXPANDED = false;
-
 class ShipInfoBar : InfoBar {
 	Ship@ ship;
 	ConstructionOverlay@ construction;
 
-	GuiBlueprint@ bpdisp;
+	//No in-game ship designer: just a portrait and the ship's name, not the
+	//interactive hex blueprint SR2 normally shows here.
+	BaseGuiElement@ shipPanel;
+	GuiSprite@ shipImage;
+	const Design@ curDesign;
 
 	GuiText@ name;
-	GuiText@ subsystem;
 
 	GuiSprite@ healthIcon;
 	GuiText@ healthLabel;
@@ -55,10 +55,7 @@ class ShipInfoBar : InfoBar {
 
 	GuiProgressbar@ exp;
 
-	GuiButton@ expandButton;
-
 	ActionBar@ actions;
-	bool expanded = false;
 
 	array<Status> statuses;
 	array<GuiStatusBox@> statusBoxes;
@@ -73,31 +70,17 @@ class ShipInfoBar : InfoBar {
 		int y = -8;
 
 		y += 38;
-		@bpdisp = GuiBlueprint(this, Alignment(Left+4, Top+y, Right-128, Bottom-70));
-		bpdisp.noClip = true;
-		bpdisp.popHover = true;
-		bpdisp.popSize = vec2i(77, 40);
-		bpdisp.horizAlign = 0.25;
-		bpdisp.vertAlign = 1.0;
-		bpdisp.hoverArcs = true;
+		@shipPanel = BaseGuiElement(this, Alignment(Left+4, Top+y, Right-128, Bottom-70));
+		shipPanel.noClip = true;
 
-		@name = GuiText(bpdisp, Alignment(Left+12, Top+28, Right-12, Top+60));
-		name.horizAlign = 0.0;
+		@shipImage = GuiSprite(shipPanel, Alignment().padded(8, 8, 8, 26));
+		shipImage.desc = icons::Ship;
+
+		@name = GuiText(shipPanel, Alignment(Left+4, Bottom-24, Right-4, Bottom));
+		name.horizAlign = 0.5;
 		name.vertAlign = 0.0;
 		name.font = FT_Medium;
 		name.stroke = colors::Black;
-		name.visible = false;
-
-		@subsystem = GuiText(bpdisp, Alignment(Left+12, Top+28, Right-12, Top+60));
-		subsystem.horizAlign = 1.0;
-		subsystem.vertAlign = 0.0;
-		subsystem.font = FT_Subtitle;
-		subsystem.stroke = colors::Black;
-		subsystem.visible = false;
-
-		@expandButton = GuiButton(bpdisp, Alignment(Right+75, Bottom-20, Width=20, Height=20), icons::Add);
-		expandButton.noClip = true;
-		expandButton.style = SS_IconButton;
 
 		@health = GuiProgressbar(this, Alignment(Left+8, Bottom-68, Left+200, Bottom-38));
 		health.textHorizAlign = 0.9;
@@ -150,43 +133,12 @@ class ShipInfoBar : InfoBar {
 		groupdisp.horizAlign = 0.0;
 
 		updateAbsolutePosition();
-		setExpanded(SHIP_INFOBAR_EXPANDED);
 	}
 
 	void remove() override {
 		if(construction !is null)
 			construction.remove();
 		InfoBar::remove();
-	}
-
-	void setExpanded(bool value) {
-		if(expanded == value)
-			return;
-		expanded = value;
-
-		bpdisp.alignment.set(Left+4, Top+30, Right-128, Bottom-70);
-		if(expanded) {
-			bpdisp.alignment.padded(0,
-					-480.0/1920.0*double(screenSize.width),
-					-610.0/1080.0*double(screenSize.height),
-					0);
-			bpdisp.horizAlign = 0.5;
-			bpdisp.vertAlign = 0.5;
-			expandButton.alignment.set(Right-34, Bottom-20, Right-34+28, Bottom-20+28);
-			expandButton.setIcon(icons::Minus);
-		}
-		else {
-			bpdisp.horizAlign = 0.25;
-			bpdisp.vertAlign = 1.0;
-			expandButton.alignment.set(Right+75, Bottom-20, Right+75+20, Bottom-20+20);
-			expandButton.setIcon(icons::Add);
-		}
-
-		bpdisp.updateAbsolutePosition();
-
-		bpdisp.popHover = !expanded;
-		name.visible = expanded;
-		subsystem.visible = expanded;
 	}
 
 	void updateActions() {
@@ -213,9 +165,7 @@ class ShipInfoBar : InfoBar {
 
 	void set(Object@ obj) override {
 		@ship = cast<Ship>(obj);
-		bpdisp.display(ship);
-
-		setExpanded(SHIP_INFOBAR_EXPANDED);
+		@curDesign = null;
 		updateActions();
 	}
 
@@ -228,45 +178,19 @@ class ShipInfoBar : InfoBar {
 	bool showManage(Object@ obj) override {
 		if(construction !is null)
 			construction.remove();
-		if(obj.hasConstruction && obj.owner.controlled) {
+		if(obj.hasConstruction && obj.owner.controlled)
 			@construction = ConstructionOverlay(findTab(), obj);
-			return false;
-		}
-		if(!expanded)
-			setExpanded(true);
 		return false;
 	}
 
-	void toggleExpanded() {
-		if(expanded == SHIP_INFOBAR_EXPANDED) {
-			SHIP_INFOBAR_EXPANDED = !SHIP_INFOBAR_EXPANDED;
-			setExpanded(SHIP_INFOBAR_EXPANDED);
-		}
-		else {
-			setExpanded(!expanded);
-		}
-	}
-
-	double lastClick = -INFINITY;
 	bool onMouseEvent(const MouseEvent& event, IGuiElement@ source) {
 		switch(event.type) {
 			case MET_Button_Up: {
 				if(event.button == 0) {
-					if(lastClick > frameTime - double(settings::iDoubleClickMS) / 1000.0) {
-						selectObject(ship);
-						setExpanded(!expanded);
-						if(SHIP_INFOBAR_EXPANDED && !expanded)
-							SHIP_INFOBAR_EXPANDED = false;
-					}
-					else
-						lastClick = frameTime;
+					selectObject(ship);
 				}
 				else if(event.button == 2) {
 					zoomTabTo(ship);
-					return true;
-				}
-				else if(event.button == 1) {
-					toggleExpanded();
 					return true;
 				}
 			} break;
@@ -294,16 +218,6 @@ class ShipInfoBar : InfoBar {
 					}
 					return true;
 				}
-				else if(evt.caller is expandButton) {
-					toggleExpanded();
-					return true;
-				}
-			break;
-			case GUI_Hover_Changed:
-				if(evt.caller is bpdisp) {
-					updateHealthBar();
-					return true;
-				}
 			break;
 		}
 		return InfoBar::onGuiEvent(evt);
@@ -317,51 +231,11 @@ class ShipInfoBar : InfoBar {
 		const Design@ design = bp.design;
 		const Hull@ hull = design.hull;
 
-		Color high;
-		Color low;
+		double curHP = bp.currentHP * bp.hpFactor;
+		double maxHP = (design.totalHP - bp.removedHP) * bp.hpFactor;
 
-		double curHP = 0, maxHP = 1;
-		if(bpdisp.hexHovered.x < 0 || bpdisp.hexHovered.y < 0) {
-			curHP = bp.currentHP * bp.hpFactor;
-			maxHP = (design.totalHP - bp.removedHP) * bp.hpFactor;
-
-			high = Color(0x00ff00ff);
-			low = Color(0xff0000ff);
-
-			subsystem.visible = false;
-		}
-		else {
-			ObjectLock lock(ship, true);
-			vec2u hex = vec2u(bpdisp.hexHovered);
-			const HexStatus@ status = bp.getHexStatus(hex.x, hex.y);
-			if(status !is null) {
-				maxHP = design.variable(hex, HV_HP) * bp.hpFactor;
-				curHP = maxHP * double(status.hp) / double(0xff);
-			}
-
-			high = Color(0x9768ffff);
-			low = Color(0xff689bff);
-
-			auto@ sys = design.subsystem(hex);
-			auto@ mod = design.module(hex);
-			if(sys !is null && expanded) {
-				subsystem.visible = true;
-				if(mod is null || mod is sys.type.coreModule || mod is sys.type.defaultModule) {
-					if(mod is sys.type.coreModule)
-						subsystem.text = format("$1 ($2)", sys.type.name, locale::SUBSYS_CORE);
-					else
-						subsystem.text = sys.type.name;
-					subsystem.color = sys.type.color;
-				}
-				else {
-					subsystem.text = mod.name;
-					subsystem.color = mod.color;
-				}
-			}
-			else {
-				subsystem.visible = false;
-			}
-		}
+		Color high(0x00ff00ff);
+		Color low(0xff0000ff);
 
 		if(!ship.visible)
 			curHP = maxHP;
@@ -534,7 +408,7 @@ class ShipInfoBar : InfoBar {
 
 	IGuiElement@ elementFromPosition(const vec2i& pos) override {
 		IGuiElement@ elem = BaseGuiElement::elementFromPosition(pos);
-		if(!expanded && (elem is this || elem is bpdisp)) {
+		if(elem is this || elem is shipPanel) {
 			vec2i relPos = pos - AbsolutePosition.topLeft;
 			bool active = material::ShipInfoBar.isPixelActive(relPos);
 			if(!active)
@@ -551,20 +425,12 @@ class ShipInfoBar : InfoBar {
 		const Design@ design = bp.design;
 		const Hull@ hull = design.hull;
 
-		if(expanded && !SHIP_INFOBAR_EXPANDED && !ship.selected)
-			setExpanded(false);
-
-		if(design !is bpdisp.design)
-			set(ship);
-
-		if(ship.visible) {
-			@bpdisp.bp = bp;
-			groupdisp.visible = true;
+		if(design !is curDesign) {
+			@curDesign = design;
+			shipImage.desc = design.icon.valid ? design.icon : icons::Ship;
 		}
-		else {
-			@bpdisp.bp = null;
-			groupdisp.visible = false;
-		}
+
+		groupdisp.visible = ship.visible;
 
 		if(construction !is null) {
 			if(construction.parent is null) {
@@ -596,11 +462,10 @@ class ShipInfoBar : InfoBar {
 		else
 			statuses.length = 0;
 
-		updateStatusBoxes(bpdisp, statuses, statusBoxes, fromObject=leader);
-		int off = expanded ? -70 : 30;
+		updateStatusBoxes(shipPanel, statuses, statusBoxes, fromObject=leader);
 		for(uint i = 0, cnt = statusBoxes.length; i < cnt; ++i) {
 			statusBoxes[i].noClip = true;
-			statusBoxes[i].rect = recti_area(bpdisp.size.width+off-36*i, bpdisp.size.height-26, 32,32);
+			statusBoxes[i].rect = recti_area(shipPanel.size.width+30-36*i, shipPanel.size.height-26, 32,32);
 		}
 
 		//Update whatever health is displayed
@@ -626,12 +491,7 @@ class ShipInfoBar : InfoBar {
 		if(owner !is null)
 			col = owner.color;
 
-		if(!expanded)
-			material::ShipInfoBar.draw(AbsolutePosition.padded(0,0,0,35), col);
-		else {
-			skin.draw(SS_Panel, SF_Normal, bpdisp.absolutePosition.padded(-20,0,0,-100), col);
-			skin.draw(SS_BG3D, SF_Normal, bpdisp.absolutePosition.padded(0,4,4,-12), col);
-		}
+		material::ShipInfoBar.draw(AbsolutePosition.padded(0,0,0,35), col);
 
 		if(actions.visible) {
 			recti pos = actions.absolutePosition;

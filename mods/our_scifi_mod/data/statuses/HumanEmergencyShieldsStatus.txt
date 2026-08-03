@@ -1,0 +1,14 @@
+Status: HumanEmergencyShieldsStatus
+	Name: #STATUS_HUMAN_EMERGENCY_SHIELDS
+	Description: #STATUS_HUMAN_EMERGENCY_SHIELDS_DESC
+	Icon: FissionReactor * #429cff
+
+	//Percentage-based shield effects scale off ship.MaxShield, which is 0 on
+	//our ship designs (no ShieldGen subsystem hexes) -- use flat Amount
+	//arguments instead, same reasoning as the passive Human Shields tech
+	//using modBonusShield() rather than the vanilla multiplicative
+	//ShieldCapacityFactor. (AddBonusShield's Amount path calls
+	//ship.modBonusShield() internally too, applied on the tick after this
+	//status is added rather than instantly.)
+	AddBonusShield(Amount = 50)
+	RestoreShieldsOverTime(Amount = 15)

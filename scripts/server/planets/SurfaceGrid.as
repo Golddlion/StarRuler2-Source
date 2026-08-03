@@ -43,7 +43,11 @@ tidy class SurfaceGrid : PlanetSurface {
 		msg << bldMaintenanceRefund;
 		msg << pressureCapTaken;
 
-		msg.writeIdentifier(SI_Biome, baseBiome.id);
+		//Ships other than the Capitol never call initSurface(), leaving their
+		//grid at its default 0x0 size and baseBiome null; skip serializing a
+		//biome id we don't have instead of crashing on the null handle.
+		if(size.width > 0 && size.height > 0)
+			msg.writeIdentifier(SI_Biome, baseBiome.id);
 
 		uint dsize = biomes.length;
 		for(uint i = 0; i < dsize; ++i) {
@@ -91,8 +95,13 @@ tidy class SurfaceGrid : PlanetSurface {
 			pressureCapTaken = civsBuilt;
 
 		
-		uint8 baseId = msg.readIdentifier(SI_Biome);
-		@baseBiome = ::getBiome(baseId);
+		if(size.width > 0 && size.height > 0) {
+			uint8 baseId = msg.readIdentifier(SI_Biome);
+			@baseBiome = ::getBiome(baseId);
+		}
+		else {
+			@baseBiome = null;
+		}
 
 		uint dsize = dataSize;
 		biomes.length = dsize;

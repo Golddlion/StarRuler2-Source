@@ -566,12 +566,14 @@ class AddResource : GenericEffect, TriggerableGeneric {
 
 #section server
 	void enable(Object& obj, any@ data) const override {
-		if(obj.isPlanet)
+		//Our slot buildings live on stars/asteroids/stations too, not just
+		//planets, so this only needs a surface to build on, not isPlanet.
+		if(obj.hasSurfaceComponent)
 			obj.modResource(arguments[0].integer, +arguments[1].decimal);
 	}
 
 	void disable(Object& obj, any@ data) const override {
-		if(obj.isPlanet)
+		if(obj.hasSurfaceComponent)
 			obj.modResource(arguments[0].integer, -arguments[1].decimal);
 	}
 #section all

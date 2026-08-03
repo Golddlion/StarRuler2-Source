@@ -1,0 +1,19 @@
+Trait: RebelGovernment
+	Name: #TRAIT_REBELGOVERNMENT
+	Description: #TRAIT_REBELGOVERNMENT_DESC
+	Category: Government
+	Order: 1
+
+	Icon: StatusWar
+	Color: #c73434
+
+	Unique: Government
+
+	//Flat starting Energy stockpile (Minerals' equivalent flat start is set
+	//once for all empires in empire.as's init(), via modTotalBudget).
+	AddEnergy(50, Modified = False)
+
+	InHomeSystem( MakeAsteroid(Resource = None) )
+	InRandomAdjacentSystem( MakeAsteroid(Resource = None) )
+	InRandomAdjacentSystem( MakeAsteroid(Resource = None) )
+	InRandomAdjacentSystem( MakeAsteroid(Resource = None) )

@@ -1,0 +1,19 @@
+Building: EnergyHarvesterUnit
+	Name: #BLD_ENERGYHARVESTERUNIT
+	Description: #BLD_ENERGYHARVESTERUNIT_DESC
+	Sprite: Factory
+
+	Category: Production
+
+	//Design doc: Energy harvester costs 2 minerals, +2 energy per turn, no
+	//upkeep, finishes one turn (60s) after being ordered.
+	Size: 1x1
+	Base Cost: 2
+	Tile Cost: 0
+	Base Maintenance: 0
+	Tile Maintenance: 0
+	Build Time: 60
+
+	RequireNotTrait(Ancient)
+
+	AddResource(Energy, 2)

@@ -2,7 +2,6 @@ import overlays.Popup;
 import elements.GuiText;
 import elements.GuiSprite;
 import elements.GuiSkinElement;
-import elements.GuiBlueprint;
 import elements.GuiImage;
 import elements.GuiButton;
 import elements.GuiGroupDisplay;
@@ -29,7 +28,9 @@ class ShipPopup : Popup {
 	bool hasConstruction = false;
 
 	array<GuiStatusBox@> statusIcons;
-	GuiBlueprint@ bpdisp;
+	BaseGuiElement@ shipPanel;
+	GuiSprite@ shipImage;
+	const Design@ curDesign;
 	GuiText@ name;
 	GuiText@ ownerName;
 
@@ -53,11 +54,10 @@ class ShipPopup : Popup {
 		@ownerName = GuiText(this, Alignment(Left+40, Top+28, Right-6, Top+46));
 		ownerName.horizAlign = 1.0;
 
-		@bpdisp = GuiBlueprint(this, Alignment(Left+4, Top+50, Right-4, Bottom-80));
-		bpdisp.popHover = true;
-		bpdisp.popSize = vec2i(77, 40);
+		@shipPanel = BaseGuiElement(this, Alignment(Left+4, Top+50, Right-4, Bottom-80));
+		@shipImage = GuiSprite(shipPanel, Alignment().padded(4,4,4,4), icons::Ship);
 
-		@cargo = GuiCargoDisplay(bpdisp, Alignment(Left, Top, Right, Top+25));
+		@cargo = GuiCargoDisplay(shipPanel, Alignment(Left, Top, Right, Top+25));
 
 		GuiSkinElement band(this, Alignment(Left+3, Bottom-80, Right-4, Bottom-50), SS_NULL);
 
@@ -115,7 +115,7 @@ class ShipPopup : Popup {
 		if(origObject is null)
 			@origObject = obj;
 		@ship = cast<Ship>(obj);
-		bpdisp.display(ship);
+		@curDesign = null;
 
 		if(ship.MaxShield > 0) {
 			shield.visible = true;
@@ -160,7 +160,7 @@ class ShipPopup : Popup {
 				break;
 			}
 		}
-		else if(source is bpdisp) {
+		else if(source is shipPanel) {
 			switch(evt.type) {
 				case MET_Button_Up:
 					if(!dragged) {
@@ -227,12 +227,6 @@ class ShipPopup : Popup {
 					}
 				}
 			break;
-			case GUI_Hover_Changed:
-				if(evt.caller is bpdisp) {
-					updateHealthBar();
-					return true;
-				}
-			break;
 		}
 		return Popup::onGuiEvent(evt);
 	}
@@ -256,9 +250,9 @@ class ShipPopup : Popup {
 		skin.draw(SS_ShipPopupBG, flags, bgPos, col);
 
 		if(owner !is null && owner.flag !is null) {
-			vec2i s = bpdisp.absolutePosition.size;
+			vec2i s = shipPanel.absolutePosition.size;
 			owner.flag.draw(
-				bpdisp.absolutePosition
+				shipPanel.absolutePosition
 					.resized(s.x*0.5, s.y*0.5, 1.0, 0.0)
 					.aspectAligned(1.0, horizAlign=1.0, vertAlign=0.0),
 				owner.color * Color(0xffffff40));
@@ -267,11 +261,9 @@ class ShipPopup : Popup {
 		skin.draw(SS_SubTitle, SF_Normal, recti_area(bgPos.topLeft + vec2i(2,2), vec2i(bgPos.width-5, 50-4)), col);
 		drawFleetIcon(ship, recti_area(bgPos.topLeft+vec2i(-2, 2), vec2i(46,46)), showStrength=false);
 
-		bpdisp.draw();
-
 		//Construction display
 		if(hasConstruction) {
-			recti plPos = bpdisp.absolutePosition;
+			recti plPos = shipPanel.absolutePosition;
 			plPos.topLeft.y += plPos.height / 2;
 			drawRectangle(plPos, Color(0x00000040));
 
@@ -295,9 +287,7 @@ class ShipPopup : Popup {
 		if(cargo.visible)
 			drawRectangle(cargo.absolutePosition, Color(0x00000040));
 
-		bpdisp.visible = false;
 		Popup::draw();
-		bpdisp.visible = true;
 	}
 
 	void updateHealthBar() {
@@ -308,28 +298,11 @@ class ShipPopup : Popup {
 		const Design@ design = bp.design;
 		const Hull@ hull = design.hull;
 
-		Color high;
-		Color low;
+		double curHP = bp.currentHP * bp.hpFactor;
+		double maxHP = (design.totalHP - bp.removedHP) * bp.hpFactor;
 
-		double curHP = 0, maxHP = 1;
-		if(bpdisp.hexHovered.x < 0 || bpdisp.hexHovered.y < 0) {
-			curHP = bp.currentHP * bp.hpFactor;
-			maxHP = (design.totalHP - bp.removedHP) * bp.hpFactor;
-
-			high = Color(0x00ff00ff);
-			low = Color(0xff0000ff);
-		}
-		else {
-			vec2u hex = vec2u(bpdisp.hexHovered);
-			const HexStatus@ status = bp.getHexStatus(hex.x, hex.y);
-			if(status !is null) {
-				maxHP = design.variable(hex, HV_HP) * bp.hpFactor;
-				curHP = maxHP * double(status.hp) / double(0xff);
-			}
-
-			high = Color(0x9768ffff);
-			low = Color(0xff689bff);
-		}
+		Color high(0x00ff00ff);
+		Color low(0xff0000ff);
 
 		if(!ship.visible)
 			curHP = maxHP;
@@ -447,17 +420,12 @@ class ShipPopup : Popup {
 		const Design@ design = bp.design;
 		const Hull@ hull = design.hull;
 
-		if(design !is bpdisp.design)
-			set(ship);
+		if(design !is curDesign) {
+			@curDesign = design;
+			shipImage.desc = design.icon.valid ? design.icon : icons::Ship;
+		}
 
-		if(ship.visible) {
-			@bpdisp.bp = bp;
-			groupdisp.visible = true;
-		}
-		else {
-			@bpdisp.bp = null;
-			groupdisp.visible = false;
-		}
+		groupdisp.visible = ship.visible;
 
 		//Update name
 		name.text = formatShipName(ship);

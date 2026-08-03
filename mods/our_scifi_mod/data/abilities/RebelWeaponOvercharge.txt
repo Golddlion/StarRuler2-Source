@@ -1,0 +1,12 @@
+//The activatable ("press R") half of Rebel Penetrating Laser Technology --
+//the passive weapon damage bonus (AddModifier/DamageFactor) is always-on;
+//this is a short burst on a cooldown, granted to ships the same way (see
+//GrantFleetAbility in bonus_effects.as and Ship.as postInit).
+Ability: RebelWeaponOvercharge
+	Name: #ABL_REBEL_WEAPON_OVERCHARGE
+	Description: #ABL_REBEL_WEAPON_OVERCHARGE_DESC
+	Icon: techImpact * #ff4040
+
+	Cooldown: 30
+
+	AddStatusSelf(RebelWeaponOverchargeStatus, Sys.Duration:10)

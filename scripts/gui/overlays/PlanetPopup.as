@@ -297,8 +297,8 @@ class PlanetPopup : Popup {
 		if(cargo.visible)
 			cargo.update(pl);
 
-		//Update population display
-		if(colonized && owner.HasPopulation != 0) {
+		//Our game hides population/society management from the player.
+		if(false) {
 			double pop = pl.population, maxPop = pl.maxPopulation;
 			if(pop < 1.0)
 				popValue.text = toString(pl.population, 1);

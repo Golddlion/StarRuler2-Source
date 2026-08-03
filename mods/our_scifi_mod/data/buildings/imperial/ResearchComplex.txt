@@ -1,0 +1,25 @@
+Building: ResearchComplex
+	Name: #BLD_RESEARCHCOMPLEX
+	Description: #BLD_RESEARCHCOMPLEX_DESC
+	Sprite: ResearchComplex
+
+	Category: Production
+	Build Affinity: Crystallic
+	Maintenance Affinity: Crystallic
+
+	//Design doc: Research lab cost/effect is "defined by balance data"; set to
+	//5 minerals to match Spaceport's tier, no upkeep.
+	Size: 1x1
+	Base Cost: 5
+	Tile Cost: 0
+	Base Maintenance: 0
+	Tile Maintenance: 0
+
+	RequireNotTrait(Ancient)
+
+	AddResource(Research, 1)
+	AddPressure(Research, 1)
+
+	ModEmpireAttribute(ResearchLabsBuilt, Add, 1)
+
+	AddPressureEmpireAttribute(Research, ResearchComplexExtraPressure) #version>=147

@@ -937,39 +937,9 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 		}
 	}
 
-	//Auto-assign resources
-	if(clicked.isPlanet && (clickedOwner is playerEmpire || clicked.isBeingColonized)) {
-		if(clicked.hasAutoImports) {
-			addOption(menu, selected, clicked, locale::CANCEL_AUTO_IMPORT, CancelAutoAssign());
-		}
-		else {
-			uint clickedLevel = clicked.level;
-			uint assignLevel = 0;
-			auto@ resType = getResource(clicked.primaryResourceType);
-			if(resType !is null) {
-				if(clickedLevel > resType.level) {
-					assignLevel = min(5, clickedLevel+1);
-				}
-				else if(clickedLevel == resType.level) {
-					if(clicked.nativeResourceDestination[0] is null)
-						assignLevel = clickedLevel+1;
-					else
-						assignLevel = 0;
-				}
-				else {
-					assignLevel = resType.level;
-				}
-			}
-			if(assignLevel != 0 && assignLevel > clickedLevel && assignLevel < uint(clicked.maxLevel)) {
-				Sprite icon;
-				if(assignLevel <= 3)
-					icon = Sprite(spritesheet::ResourceClassIcons, clamp(assignLevel-1, 0, 2));
-
-				addOption(menu, selected, clicked, format(locale::AUTO_IMPORT_LEVEL, toString(assignLevel)),
-						AutoAssignLevel(assignLevel), icon);
-			}
-		}
-	}
+	//Auto-assign resources: vanilla native-resource import-leveling system,
+	//not applicable to our simplified Minerals+Energy economy (no native
+	//resource levels to auto-import), so intentionally suppressed.
 
 	//Colonization
 	if(clicked.isPlanet && playerEmpire.NoAutoColonize == 0) {
@@ -1024,14 +994,8 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 			else {
 				if(clickedOwner is null || !clickedOwner.valid) {
 					addOption(menu, selected, clicked, quarantined ? locale::AUTO_COLONIZE_BLOCKED : locale::AUTO_COLONIZE, AutoColonize(), COLONIZE_ICON);
-
-					auto@ resType = getResource(clicked.primaryResourceType);
-					if(resType !is null && resType.level > 0) {
-						addOption(menu, selected, clicked,
-								format(locale::AUTO_COLONIZE_LEVEL, resType.level),
-								AutoColonizeLevel(),
-								Sprite(spritesheet::ResourceClassIcons, clamp(resType.level-1, 0, 2)));
-					}
+					//No AUTO_COLONIZE_LEVEL suboption: that's a vanilla
+					//native-resource-level threshold, not applicable here.
 				}
 			}
 		}
@@ -1052,17 +1016,10 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 			}
 		}
 
-		//Transfering support ships
-		if(clicked !is null && clicked.owner is selected.owner) {
-			if(selected.hasLeaderAI && selected.SupplyCapacity > 0) {
-				if(selected is clicked) {
-					addOption(menu, selected, clicked, locale::MANAGE_SUPPORTS, TransferSupport(), icons::ManageSupports);
-				}
-				else if(clicked.hasLeaderAI && clicked.SupplyCapacity > 0) {
-					addOption(menu, selected, clicked, locale::TRANSFER_SUPPORT_SHIPS, TransferSupport(), icons::ManageSupports);
-				}
-			}
-		}
+		//Transfering support ships: vanilla carrier/escort-bay mechanic that
+		//doesn't apply to our fixed Small/Medium/Large/Capitol ship classes,
+		//so this is intentionally suppressed rather than left showing
+		//"Supplies" options with nothing meaningful behind them.
 
 		//Pickup goodies
 		if(selected.hasLeaderAI && clicked.isPickup && selected.hasMover && selected.maxAcceleration > 0) {
@@ -1090,25 +1047,11 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 			}
 		}
 
-		if(selected.isShip && selected.hasLeaderAI && clicked.isPlanet
-				&& clickedOwner !is null && clickedOwner.valid && clickedOwner !is playerEmpire) {
-			if(playerEmpire.isHostile(clickedOwner) && !selected.hasOrbit) {
-				if(clicked.isProtected(playerEmpire)) {
-					addOption(menu, selected, clicked, locale::PROTECTED_OPTION, ProtectedOption(), icons::Strength * Color(0xff0000ff));
-				}
-				else {
-					double base = clicked.baseLoyalty;
-					double loy = clicked.currentLoyalty;
-					double timer = config::SIEGE_LOYALTY_TIME * ceil(base / 10.0) * (loy / max(base, 1.0));
-					timer *= selected.owner.CaptureTimeFactor;
-					timer *= clicked.owner.CaptureTimeDifficulty;
-					double cost = config::SIEGE_LOYALTY_SUPPLY_COST * loy;
-					cost *= selected.owner.CaptureSupplyFactor;
-					cost *= clicked.owner.CaptureSupplyDifficulty;
-					addOption(menu, selected, clicked, format(locale::CAPTURE_OPTION, standardize(cost), formatTime(timer)), CaptureOption(), icons::Strength * Color(0xff8000ff));
-				}
-			}
-		}
+		//Vanilla loyalty-siege capture (ProtectedOption/CaptureOption) is
+		//intentionally suppressed: it's a duplicate, more complex way to take
+		//an enemy planet that conflicts with our own ConquerPlanet ability
+		//(see data/abilities/our_abilities/ConquerPlanet.txt), which already
+		//auto-surfaces here via the Abilities block below.
 
 		//Movement options
 		if(selected.hasMover && selected.hasLeaderAI && (!selected.hasOrbit || selected.maxAcceleration > 0)) {
@@ -1123,19 +1066,10 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 
 	//System actions
 	if(selected !is null && selected.owner is playerEmpire) {
-		//Support resupply
-		if(clicked !is null && selected.isShip && selected.hasLeaderAI) {
-			if(clicked.isStar && clicked.region.AvailSupportMask & playerEmpire.mask != 0) {
-				addOption(menu, selected, clicked.region, format(locale::REFRESH_SUPPORTS, clicked.region.name), RefreshOption(),
-						icons::ManageSupports);
-			}
-			else if((clicked.isPlanet || (clicked.isOrbital && clicked.hasLeaderAI)) && clickedOwner is playerEmpire && clicked.supportCount > 0) {
-				addOption(menu, selected, clicked, format(locale::REFRESH_SUPPORTS, clicked.name), RefreshOption(),
-						icons::ManageSupports);
-			}
-		}
+		//Support resupply: same vanilla support-ship-bay system as
+		//"Transfering support ships" above, intentionally suppressed.
 
-		//Asteroid base construction
+		//Asteroid base construction
 		if(clicked !is null && constructObj !is null && constructObj.hasConstruction
 			&& constructObj.canBuildAsteroids && clicked.isAsteroid &&
 			cast<Asteroid>(clicked).canDevelop(playerEmpire)
@@ -1167,20 +1101,8 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 			}
 		}
 
-		//Terraforming
-		if(clicked !is null && selected.hasConstruction
-			&& selected.canTerraform && clicked.isPlanet
-			&& clickedOwner is playerEmpire && !clicked.isTerraforming()
-			&& clicked.region !is null && selected.region !is null
-			&& clicked !is selected
-			&& config::ENABLE_TERRAFORMING != 0
-			&& playerEmpire.ForbidTerraform == 0) {
-
-			@pathCheck.forEmpire = playerEmpire;
-			pathCheck.generate(getSystem(selected.region), getSystem(clicked.region));
-			if(pathCheck.isUsablePath)
-				addOption(menu, selected, clicked, locale::TERRAFORM_OPTION, TerraformOption());
-		}
+		//Terraforming: not part of our design doc's structure/economy set,
+		//intentionally suppressed.
 
 		if(selected is clicked && selected.isPlanet) {
 			//Abandon planet
@@ -1188,36 +1110,10 @@ bool openContextMenu(Object& clicked, Object@ selected = null) {
 				addOption(menu, selected, clicked, locale::ABANDON, Abandon(), icons::UnderSiege * colors::Red);
 		}
 
-		//Retrofit options
-		if(selected.hasLeaderAI && clicked !is null && clicked.owner is playerEmpire
-				&& selected.region !is null && selected.region is clicked.region) {
-
-			//Figure out if we should redirect this
-			Object@ constructFrom;
-			Object@ constructAt;
-
-			if(clicked.isOrbital) {
-				Orbital@ orb = cast<Orbital>(clicked);
-				if(orb.hasMaster()) {
-					@constructAt = orb.getMaster();
-					@constructFrom = clicked;
-				}
-				else {
-					@constructAt = clicked;
-				}
-			}
-			else {
-				@constructAt = clicked;
-			}
-
-			if(constructAt.hasConstruction && constructAt.canBuildShips) {
-				int cost = selected.getRetrofitCost();
-				if(cost >= 0) {
-					double labor = selected.getRetrofitLabor();
-					addOption(menu, selected, clicked, format(locale::RETROFIT_OPTION, formatMoney(cost), standardize(labor, true)), RetrofitOption(constructAt, constructFrom));
-				}
-			}
-		}
+		//Retrofit options: vanilla "redesign an existing ship at a shipyard"
+		//mechanic, not applicable to our fixed Small/Medium/Large/Capitol
+		//designs (players don't build custom designs to retrofit into),
+		//intentionally suppressed.
 	}
 	
 	//System colonization

@@ -1,9 +1,12 @@
+#include "include/resource_constants.as"
+
 import object_creation;
 import regions.regions;
 import planet_types;
 import saving;
 import util.target_search;
 import cargo;
+import tile_resources;
 from objects.Asteroid import createAsteroid;
 
 tidy class MoonData {
@@ -18,7 +21,10 @@ tidy class PlanetScript {
 	bool hpDelta = false;
 	uint ringStyle = 0;
 	array<MoonData@>@ moons;
-	
+	double baseMinerals = -1.0;
+	double baseEnergy = -1.0;
+	double energyTurnTimer = 0.0;
+
 	void init(Planet& planet) {
 		timer = -float(uint8(planet.id)) / 255.0;
 		planet.owner.recordStatDelta(stat::Planets, 1);
@@ -33,6 +39,14 @@ tidy class PlanetScript {
 			planet.owner.TotalPlanets += 1;
 			planet.owner.registerPlanet(planet);
 		}
+
+		//Moons are created natively (addMoon()) rather than through MakePlanet,
+		//so they don't get our fixed 5-slot grid. Detect them by their smaller
+		//radius (main planets range 6-14, moons are noticeably smaller) and
+		//force them down to 3 slots instead. This only ever runs once, right
+		//after creation, before anything could have been built.
+		if(planet.radius < 6.0)
+			planet.regenSurface(3, 1, 1);
 	}
 
 	void save(Planet& planet, SaveFile& file) {
@@ -366,6 +380,43 @@ tidy class PlanetScript {
 
 		Empire@ owner = planet.owner;
 		if(owner !is null && owner.valid) {
+			//Design doc: every owned planet has its own flat per-turn base
+			//income (Eden/the homeworld: fixed 2 Minerals + 2 Energy; any
+			//other owned planet: random 2-5 of each).
+			//
+			//Minerals: rolled/applied once ever (first owner to hold this
+			//planet) via the same modResource() mechanism buildings use for
+			//persistent income, so it stacks correctly with Mineral Mine
+			//buildings, shows up in the map icon and tooltip (both read
+			//grid.resources), and automatically carries over to whoever
+			//owns the planet next -- exactly like "captured mines
+			//immediately work for the new owner".
+			//
+			//Energy: NOT routed through modResource(TR_Energy, ...) -- that
+			//feeds Empire::modEnergyIncome(), which (unlike the Money path)
+			//applies its argument as a continuous per-second rate rather
+			//than a one-off registration, so it would accrue Energy roughly
+			//30x too fast. Kept on the direct modEnergyStored() + turn
+			//timer pattern instead, which is confirmed correct but (unlike
+			//Minerals) won't drive the map icon by itself.
+			if(baseMinerals < 0.0) {
+				if(planet is owner.Homeworld) {
+					baseMinerals = 2.0;
+					baseEnergy = 2.0;
+				}
+				else {
+					baseMinerals = double(randomi(2, 5));
+					baseEnergy = double(randomi(2, 5));
+				}
+				planet.modResource(TR_Money, baseMinerals);
+			}
+			energyTurnTimer += time;
+			if(energyTurnTimer >= TURN_LENGTH) {
+				energyTurnTimer -= TURN_LENGTH;
+				if(baseEnergy > 0.0)
+					owner.modEnergyStored(baseEnergy);
+			}
+
 			planet.constructionTick(time);
 			if(planet.hasConstructionUnder(0.2))
 				return 0.0;

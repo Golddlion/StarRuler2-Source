@@ -3,6 +3,7 @@ import saving;
 import unlock_tags;
 import achievements;
 import unlock_tags;
+import traits;
 
 tidy class ResearchGrid : Component_ResearchGrid, Savable {
 	ReadWriteMutex mtx;
@@ -144,8 +145,14 @@ tidy class ResearchGrid : Component_ResearchGrid, Savable {
 
 	void initResearch(Empire& emp) {
 		WriteLock lock(mtx);
-		if(hasDLC("Heralds"))
-			@grid = getTechnologyGridSpec("Heralds").create();
+		//Faction-specific research trees instead of the vanilla shared tree:
+		//each faction only ever sees its own ship-upgrade research.
+		auto@ rebelTrait = getTrait("RebelGovernment");
+		auto@ humanTrait = getTrait("HumanGovernment");
+		if(rebelTrait !is null && emp.hasTrait(rebelTrait.id))
+			@grid = getTechnologyGridSpec("RebelGrid").create();
+		else if(humanTrait !is null && emp.hasTrait(humanTrait.id))
+			@grid = getTechnologyGridSpec("HumanGrid").create();
 		else
 			@grid = getTechnologyGridSpec("Base").create();
 		tagUnlocks.length = getUnlockTagCount();

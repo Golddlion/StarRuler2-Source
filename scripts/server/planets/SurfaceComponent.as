@@ -17,6 +17,25 @@ from components.ObjectManager import getDefenseDesign;
 import bool getCheatsEverOn() from "cheats";
 const string TAG_SUPPORT("Support");
 
+//Purely-cosmetic resource types (Distribution: 0, never natively spawned)
+//used to show a map icon for our own building-driven Minerals/Energy
+//production, since that's tracked in grid.resources[] and is completely
+//separate from the vanilla native-resource system nativeResourceType drives.
+const ResourceType@ ourMineralsIconType;
+const ResourceType@ ourEnergyIconType;
+
+const ResourceType@ getOurMineralsIconType() {
+	if(ourMineralsIconType is null)
+		@ourMineralsIconType = getResource("OurMinerals");
+	return ourMineralsIconType;
+}
+
+const ResourceType@ getOurEnergyIconType() {
+	if(ourEnergyIconType is null)
+		@ourEnergyIconType = getResource("OurEnergy");
+	return ourEnergyIconType;
+}
+
 bool INSTANT_COLONIZE = false;
 void setInstantColonize(bool value) {
 	INSTANT_COLONIZE = value;
@@ -356,10 +375,14 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			obj.addResource(res.id);
 		changeSurfaceOwner(obj, null);
 
-		obj.canBuildShips = false;
-		obj.canBuildAsteroids = false;
-		obj.canBuildOrbitals = false;
-		obj.canTerraform = false;
+		//Stars/asteroids/stations have a surface but no Construction component
+		//(no ship/orbital/terraform building queue).
+		if(obj.hasConstruction) {
+			obj.canBuildShips = false;
+			obj.canBuildAsteroids = false;
+			obj.canBuildOrbitals = false;
+			obj.canTerraform = false;
+		}
 
 		++SurfaceModId;
 		originalSurfaceSize = grid.size;
@@ -749,6 +772,13 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			return;
 		if(type.civilian || !type.canBuildOn(obj))
 			return;
+
+		//Suns only take the Star Harvester, and it only goes on suns: they're
+		//a single-slot body dedicated to a much bigger energy payoff.
+		bool isStarHarvester = type.ident == "StarHarvester";
+		if(obj.isStar != isStarHarvester)
+			return;
+
 		if(pos.x < 0 || pos.y < 0)
 			return;
 		if(pos.x >= int(grid.size.x) || pos.y >= int(grid.size.y))
@@ -1190,7 +1220,9 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 		double baseLoyalty = max(double(BaseLoyalty + obj.owner.GlobalLoyalty.value), 1.0);
 		double loyTimer = config::SIEGE_LOYALTY_TIME * ceil(baseLoyalty / 10.0);
 		double loyMod = time * baseLoyalty / loyTimer / obj.owner.CaptureTimeDifficulty;
-		double orbRadiusSQ = sqr(cast<Planet>(obj).OrbitSize);
+		//Stars/asteroids/stations don't have a Planet's OrbitSize; fall back
+		//to the object's own radius for the siege/loyalty search range.
+		double orbRadiusSQ = obj.isPlanet ? sqr(cast<Planet>(obj).OrbitSize) : sqr(obj.radius + 100.0);
 		siegeMask = 0;
 
 		uint prevOrbits = orbitsMask;
@@ -1511,11 +1543,15 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			prevBaseLoyalty = BaseLoyalty;
 			DecayLevel = Level;
 			DecayTimer = -1.0;
-			obj.modSupplyCapacity(+newLevel.baseSupport);
+			//Stars/asteroids/stations have a surface but no LeaderAI (fleet
+			//command capacity doesn't apply to them).
+			if(obj.hasLeaderAI)
+				obj.modSupplyCapacity(+newLevel.baseSupport);
 		}
 		else {
 			NeighbourLoyalty = newLevel.neighbourLoyalty - prevLevel.neighbourLoyalty;
-			obj.modSupplyCapacity(newLevel.baseSupport - prevLevel.baseSupport);
+			if(obj.hasLeaderAI)
+				obj.modSupplyCapacity(newLevel.baseSupport - prevLevel.baseSupport);
 		}
 
 		if(obj.owner !is null && obj.owner.valid) {
@@ -2061,7 +2097,10 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 
 		//Take over the planet
 		@obj.owner = newOwner;
-		obj.takeoverFleet(newOwner, supportRatio);
+		//Stars/asteroids/stations have a surface but no LeaderAI-commanded
+		//defense fleet to hand over.
+		if(obj.hasLeaderAI)
+			obj.takeoverFleet(newOwner, supportRatio);
 		newOwner.recordEvent(stat::Planets, 1, obj.name);
 	}
 
@@ -2182,8 +2221,31 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 							DecayTimer > 0.0);
 				}
 				else {
-					icon.setResource(uint(-1));
-					icon.setState(false, false, true, false);
+					//No native resource deposit: show our own building
+					//production instead, if this world (owned by us) has any.
+					double minerals = grid.resources.length > TR_Money ? grid.resources[TR_Money] : 0.0;
+					double energy = grid.resources.length > TR_Energy ? grid.resources[TR_Energy] : 0.0;
+					if(minerals > 0.0 || energy > 0.0) {
+						//Prefer showing Minerals whenever a body produces any
+						//(our primary resource, more actionable for expansion
+						//planning at a glance); Energy only when Minerals is
+						//exactly zero. A body producing both used to show
+						//Energy on ties/higher values, which could make
+						//Minerals-producing worlds never show their icon.
+						const ResourceType@ ourType = minerals > 0.0 ? getOurMineralsIconType() : getOurEnergyIconType();
+						if(ourType !is null) {
+							icon.setResource(ourType.id);
+							icon.setState(false, false, true, false);
+						}
+						else {
+							icon.setResource(uint(-1));
+							icon.setState(false, false, true, false);
+						}
+					}
+					else {
+						icon.setResource(uint(-1));
+						icon.setState(false, false, true, false);
+					}
 				}
 			}
 			else if(obj.isKnownTo(playerEmpire) && playerEmpire.valid) {
@@ -2309,7 +2371,12 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			prevBaseLoyalty = newLoy;
 		}
 
-		popIncome = income;
+		//Our economy is entirely building-driven (Mineral Mine/Energy
+		//Harvester), not population-driven -- population/city-tier mechanics
+		//are hidden from the UI but still simulated underneath, so without
+		//this the vanilla per-level civilian income (pop * 30/level tier)
+		//would silently keep compounding into the player's Minerals total.
+		popIncome = 0;
 		if(needsPopulationForLevel)
 			obj.resourceEfficiency = nativeLevelPct;
 		else
@@ -2366,6 +2433,12 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			icon.visible = obj.isVisibleTo(playerEmpire);
 			icon.hintParentObject(obj.region, false);
 			updateIconVision(obj);
+			//Keep the map icon in sync with our own building production
+			//(grid.resources[] changes whenever a Mineral Mine/Energy
+			//Harvester finishes or is lost, unlike native resource deposits
+			//which are static once placed).
+			if(obj.nativeResourceCount == 0)
+				updateIcon(obj);
 
 			if(wasMoving != obj.isMoving) {
 				if(wasMoving) {
@@ -2451,10 +2524,13 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			}
 		}
 
-		//Update object loyalty
+		//Update object loyalty. The siege/loyalty system is planet-specific
+		//(fleet defense, labor-funded builds); stars/asteroids/stations just
+		//flip ownership directly via takeoverPlanet() instead of being sieged.
 		occTimer += time;
 		if(occTimer > 1.f) {
-			updateLoyalty(obj, occTimer);
+			if(obj.isPlanet)
+				updateLoyalty(obj, occTimer);
 			occTimer = 0.f;
 		}
 		Region@ reg = obj.region;
@@ -2473,7 +2549,12 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			++SurfaceModId;
 
 		//Update resources from grid
-		int newIncome = ceil(grid.resources[TR_Money] * TILE_MONEY_RATE * obj.owner.MoneyGenerationFactor) + popIncome + bonusIncome;
+		//TILE_MONEY_RATE (75x) is a vanilla constant calibrated for SR2's
+		//original population-driven tile-money scale; our buildings grant a
+		//flat, already-final amount (e.g. Mineral Mine = +2), so applying
+		//that multiplier here would inflate one mine's income 75-fold. Use
+		//the flat amount directly instead.
+		int newIncome = ceil(grid.resources[TR_Money] * obj.owner.MoneyGenerationFactor) + popIncome + bonusIncome;
 		if(prevIncome != newIncome) {
 			if(prevIncome < 0) {
 				if(newIncome < 0) {
@@ -2515,7 +2596,9 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 		}
 
 		double newDefense = max(grid.resources[TR_Defense], 0.0) * DEFENSE_LABOR_PM / 60.0 * obj.owner.DefenseGenerationFactor;
-		bool pooled = obj.canGainSupports && obj.owner.hasDefending;
+		//Stars/asteroids/stations have a surface but no LeaderAI-commanded
+		//support fleet to pool defense into.
+		bool pooled = obj.hasLeaderAI && obj.canGainSupports && obj.owner.hasDefending;
 		if(!pooled) {
 			if(prevDefense < -0.01) {
 				prevDefense = -prevDefense;
@@ -2542,17 +2625,21 @@ tidy class SurfaceComponent : Component_SurfaceComponent, Savable {
 			}
 		}
 
-		double prevLabor = obj.distributedLabor;
-		double laborRes = max(grid.resources[TR_Labor], 0.0);
-		double labor = laborRes * TILE_LABOR_RATE * obj.owner.LaborGenerationFactor;
+		//Stars/asteroids/stations have a surface but no Construction component
+		//(no labor-funded ship/orbital build queue to distribute labor into).
+		if(obj.hasConstruction) {
+			double prevLabor = obj.distributedLabor;
+			double laborRes = max(grid.resources[TR_Labor], 0.0);
+			double labor = laborRes * TILE_LABOR_RATE * obj.owner.LaborGenerationFactor;
 
-		if(prevLabor != labor) {
-			bool hasLabor = laborRes > 0.0001 || obj.laborIncome > 0.0001 || obj.currentLaborStored > 0.001;
-			obj.canBuildShips = hasLabor;
-			obj.canBuildAsteroids = hasLabor;
-			obj.canBuildOrbitals = hasLabor;
-			obj.canTerraform = hasLabor;
-			obj.setDistributedLabor(labor);
+			if(prevLabor != labor) {
+				bool hasLabor = laborRes > 0.0001 || obj.laborIncome > 0.0001 || obj.currentLaborStored > 0.001;
+				obj.canBuildShips = hasLabor;
+				obj.canBuildAsteroids = hasLabor;
+				obj.canBuildOrbitals = hasLabor;
+				obj.canTerraform = hasLabor;
+				obj.setDistributedLabor(labor);
+			}
 		}
 
 		//Apply colonization steps

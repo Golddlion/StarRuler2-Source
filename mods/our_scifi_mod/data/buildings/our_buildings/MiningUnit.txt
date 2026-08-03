@@ -1,0 +1,19 @@
+Building: MiningUnit
+	Name: #BLD_MININGUNIT
+	Description: #BLD_MININGUNIT_DESC
+	Sprite: Factory
+
+	Category: Production
+
+	//Design doc: Mineral mine costs 2 minerals, +2 minerals per turn, no
+	//upkeep, finishes one turn (60s) after being ordered.
+	Size: 1x1
+	Base Cost: 2
+	Tile Cost: 0
+	Base Maintenance: 0
+	Tile Maintenance: 0
+	Build Time: 60
+
+	RequireNotTrait(Ancient)
+
+	AddResource(Money, 2)

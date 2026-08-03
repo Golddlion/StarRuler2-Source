@@ -58,6 +58,7 @@ OT_Asteroid: Asteroid
 NTRG_NOT_SPACE: Cannot target space.
 NTRG_SPACE: Must target unowned.
 NTRG_NOT_SELF: Cannot target self.
+NTRG_HAS_BUILDINGS: All buildings must be destroyed first.
 NTRG_TRADE_PRESENCE: Requires trade presence.
 NTRG_NOT_WAR: Cannot target enemies.
 NTRG_TYPE: Must target $1.

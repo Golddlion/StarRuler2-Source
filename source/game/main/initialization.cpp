@@ -1073,7 +1073,7 @@ void initMods(const std::vector<std::string>& mods) {
 
 				devices.driver->createWindow(windat);
 				devices.driver->setCursorLocked(cursorCapture);
-				devices.driver->setWindowTitle("Star Ruler 2");
+				devices.driver->setWindowTitle("Sol Dominion (working title)");
 
 				devices.render->init();
 

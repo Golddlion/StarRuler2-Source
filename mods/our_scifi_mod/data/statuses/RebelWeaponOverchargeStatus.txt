@@ -1,0 +1,6 @@
+Status: RebelWeaponOverchargeStatus
+	Name: #STATUS_REBEL_WEAPON_OVERCHARGE
+	Description: #STATUS_REBEL_WEAPON_OVERCHARGE_DESC
+	Icon: techImpact * #ff4040
+
+	AddShipEffectiveness(0.5)

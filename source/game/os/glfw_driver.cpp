@@ -205,10 +205,10 @@ public:
 			data.height = mode->height;
 		}
 
-		window = glfwCreateWindow(data.width, data.height, "Star Ruler 2", monitor, nullptr);
+		window = glfwCreateWindow(data.width, data.height, "Sol Dominion (working title)", monitor, nullptr);
 
 		if(window == 0)
-			window = glfwCreateWindow(1024,768, "Star Ruler 2 - Error Creating Window", nullptr, nullptr);
+			window = glfwCreateWindow(1024,768, "Sol Dominion - Error Creating Window", nullptr, nullptr);
 
 		if(window == 0) {
 			error("Could not create window.");

@@ -1,0 +1,22 @@
+Preset: Humans
+	Name: #RACE_HUMANS
+	Tagline: #RACE_HUMANS_TAGLINE
+	Lore: #RACE_HUMANS_LORE
+	Portrait: emp_portrait_harrian
+	Shipset: Moirai
+
+	Trait: HumanGovernment
+	Trait: Hyperdrive
+	Trait: Terrestial
+
+Preset: Rebels
+	Name: #RACE_REBELS
+	Tagline: #RACE_REBELS_TAGLINE
+	Lore: #RACE_REBELS_LORE
+	Portrait: emp_portrait_nylli
+	Shipset: Volkur
+	WeaponSkin: Skin2
+
+	Trait: RebelGovernment
+	Trait: Hyperdrive
+	Trait: RebelCapitol

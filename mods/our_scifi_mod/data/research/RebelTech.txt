@@ -1,0 +1,30 @@
+Technology: RebelRoot
+	Name: #R_REBEL_ROOT
+	Description: #R_REBEL_ROOT_DESC
+	Class: Special
+	Icon: TechScience
+	Color: #aaaaaa
+
+	Default Unlock: True
+
+Technology: RebelLasers
+	Name: #R_REBEL_LASERS
+	Description: #R_REBEL_LASERS_DESC
+	Class: Unlock
+
+	Icon: techImpact * #ff4040
+	Color: #ff4040
+
+	//Design doc: "every research project completes in one turn". A single
+	//Research Lab produces Research at TILE_RESEARCH_RATE (0.75/sec), so a
+	//Point Cost of 45 finishes in exactly one 60s turn.
+	Point Cost: 45
+	Time Cost: 60
+
+	UnlockTag(RebelLasersResearched)
+	AddModifier( tag/Weapon::DamageFactor(1.3) )
+	GrantFleetAbility(RebelWeaponOvercharge)
+
+Grid: RebelGrid
+	RebelRoot: 0,0
+	RebelLasers: 1,0

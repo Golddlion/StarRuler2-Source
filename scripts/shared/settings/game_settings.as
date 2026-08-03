@@ -291,21 +291,23 @@ class GameSettings : SettingsContainer, Serializable {
 	}
 
 	void defaults() {
-		empires.length = 3;
+		empires.length = 2;
 		empires[0].type = ET_Player;
 		empires[0].name = "Empire 1";
-		empires[0].raceName = "The First";
-		//empires[0].chooseTrait(getTrait("Flux"));
-		//empires[0].chooseTrait(getTrait("Empire"));
+		empires[0].raceName = "Humans";
+		empires[0].shipset = "Moirai";
+		empires[0].chooseTrait(getTrait("HumanGovernment"));
+		empires[0].chooseTrait(getTrait("Hyperdrive"));
+		empires[0].chooseTrait(getTrait("Terrestial"));
+
 		empires[1].name = "Empire 2";
-		empires[1].effectorSkin = "Skin1";
-		empires[1].shipset = "Gevron";
-		empires[1].raceName = "Terrakin";
 		empires[1].difficulty = 2;
-		empires[2].name = "Empire 3";
-		empires[2].effectorSkin = "Skin2";
-		empires[2].raceName = "Terrakin";
-		empires[2].difficulty = 2;
+		empires[1].raceName = "Rebels";
+		empires[1].shipset = "Volkur";
+		empires[1].effectorSkin = "Skin2";
+		empires[1].chooseTrait(getTrait("RebelGovernment"));
+		empires[1].chooseTrait(getTrait("Hyperdrive"));
+		empires[1].chooseTrait(getTrait("RebelCapitol"));
 
 		//empires[0].chooseTrait(getTrait("Ancient"));
 		//empires[0].chooseTrait(getTrait("Sublight"));

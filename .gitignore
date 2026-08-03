@@ -13,3 +13,11 @@
 *.sdf
 *.db-shm
 *.db-wal
+
+# Build outputs
+*.exe
+*.exp
+*.lib
+*.dll
+x64/
+source/msvc/Star Ruler 2/Star Ruler 2/

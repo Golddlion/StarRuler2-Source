@@ -15,11 +15,15 @@ import cargo;
 import resources;
 import ship_groups;
 import util.formatting;
+import icons;
 from obj_selection import isSelected, selectObject, clearSelection, addToSelection;
+import void openOverlay(Object@ obj) from "tabs.GalaxyTab";
+from overlays.Construction import ConstructionOverlay;
 
 class AsteroidInfoBar : InfoBar {
 	Asteroid@ obj;
 	Gui3DObject@ objView;
+	ConstructionOverlay@ overlay;
 
 	GuiSkinElement@ nameBox;
 	GuiText@ name;
@@ -74,8 +78,9 @@ class AsteroidInfoBar : InfoBar {
 
 	void updateActions() {
 		actions.clear();
-		
+
 		if(obj.owner is playerEmpire) {
+			actions.add(ManageAction());
 			actions.addBasic(obj);
 			actions.addEmpireAbilities(playerEmpire, obj);
 		}
@@ -105,7 +110,17 @@ class AsteroidInfoBar : InfoBar {
 	}
 
 	bool showManage(Object@ obj) override {
+		if(overlay !is null)
+			overlay.remove();
+		@overlay = ConstructionOverlay(findTab(), obj);
+		visible = false;
 		return false;
+	}
+
+	void remove() override {
+		if(overlay !is null)
+			overlay.remove();
+		InfoBar::remove();
 	}
 
 	double updateTimer = 1.0;
@@ -192,3 +207,15 @@ InfoBar@ makeAsteroidInfoBar(IGuiElement@ parent, Object@ obj) {
 	bar.set(obj);
 	return bar;
 }
+
+class ManageAction : BarAction {
+	void init() override {
+		icon = icons::Manage;
+		tooltip = locale::TT_MANAGE_PLANET;
+	}
+
+	void call() override {
+		selectObject(obj);
+		openOverlay(obj);
+	}
+};

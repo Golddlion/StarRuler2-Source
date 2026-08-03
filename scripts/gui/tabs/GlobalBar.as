@@ -307,29 +307,27 @@ class BudgetResource : ResourceDisplay {
 
 	GuiProgressbar@ cycleBar;
 
-	GuiButton@ welfareButton;
-	GuiSprite@ welfareIcon;
-
 	GuiText@ nextBudget;
 
 	BudgetResource(IGuiElement@ parent, Alignment@ align) {
 		super(parent, align);
 
+		//Minerals reuses the Money/Budget stat under the hood, but should look
+		//like an industrial/mining resource rather than cash.
 		color = colors::Money;
-		addIcon(icons::Money);
+		addIcon(icons::Labor);
 		addTexts();
 
 		@cycleBar = GuiProgressbar(value, Alignment(Left, Bottom-0.5f+3, Left+120, Bottom-4));
 		cycleBar.font = FT_Small;
-		
+
 		@nextBudget = GuiText(value, Alignment(Left+120, Bottom-0.5f+1, Left+200, Bottom-1));
 		nextBudget.horizAlign = 0.5;
 
-		@welfareButton = GuiButton(value, Alignment(Right-84+40-25, Top, Width=50, Height=24));
-		@welfareIcon = GuiSprite(welfareButton, Alignment(Left+8, Top-5, Right-8, Bottom+5),
-				Sprite(spritesheet::ConvertIcon, 0));
-
-		setMarkupTooltip(welfareButton, locale::WELFARE_TT, hoverStyle=false);
+		//No welfare-conversion button: that's a vanilla Influence-economy
+		//feature (convert budget surplus into Influence/Research/Defense
+		//allocations) that doesn't apply to our simplified Minerals+Energy
+		//economy.
 	}
 
 	int get_baseValueWidth() {
@@ -341,7 +339,7 @@ class BudgetResource : ResourceDisplay {
 				formatMoneyChange(playerEmpire.RemainingBudget, colored=true),
 				formatMoneyChange(playerEmpire.EstNextBudget, colored=true),
 				formatTime(playerEmpire.BudgetCycle - playerEmpire.BudgetTimer),
-				getSpriteDesc(welfareIcon.desc));
+				"");
 		tt += format("\n[font=Medium]$1[/font]\n", locale::RESOURCE_BUDGET);
 		for(int i = MoT_COUNT - 1; i >= 0; --i) {
 			int money = playerEmpire.getMoneyFromType(i);
@@ -370,18 +368,6 @@ class BudgetResource : ResourceDisplay {
 	}
 
 	bool onGuiEvent(const GuiEvent& evt) override {
-		if(evt.caller is welfareButton && evt.type == GUI_Clicked) {
-			GuiContextMenu menu(mousePos);
-			menu.itemHeight = 54;
-			string money = formatMoney(350.0 / playerEmpire.WelfareEfficiency);
-			menu.addOption(ChangeWelfare(format(locale::WELFARE_INFLUENCE, money), 0));
-			menu.addOption(ChangeWelfare(format(locale::WELFARE_ENERGY, money), 1));
-			menu.addOption(ChangeWelfare(format(locale::WELFARE_RESEARCH, money), 2));
-			menu.addOption(ChangeWelfare(format(locale::WELFARE_LABOR, money), 3));
-			menu.addOption(ChangeWelfare(format(locale::WELFARE_DEFENSE, money), 4));
-			menu.updateAbsolutePosition();
-			return true;
-		}
 		return ResourceDisplay::onGuiEvent(evt);
 	}
 
@@ -404,8 +390,6 @@ class BudgetResource : ResourceDisplay {
 
 		upperText.defaultColor = color;
 		upperText.text = formatMoney(curBudget, roundUp=false);
-
-		welfareIcon.desc = Sprite(spritesheet::ConvertIcon, playerEmpire.WelfareMode);
 
 		//Cycle timer
 		double cycle = playerEmpire.BudgetCycle;
@@ -540,24 +524,18 @@ class GlobalBar : BaseGuiElement {
 		@container = BaseGuiElement(this, Alignment_Fill());
 		container.StrictBounds = true;
 
+		// Our design only surfaces Minerals and Energy. "Minerals" is SR2's Money/
+		// Budget resource relabeled via locale override (it's the shared, empire-
+		// wide pool that already funds Construction/Orbitals/Buildings/Ships,
+		// unlike Labor which is tracked per-planet). FTL/Influence/Research/Defense
+		// are hidden (their underlying systems still exist, just not shown). FTL is
+		// slated to be redesigned as a dynamic of our own energy system later.
 		@budget = BudgetResource(container, Alignment());
 		sections.insertLast(budget);
-
-		@influence = InfluenceResource(container, Alignment());
-		sections.insertLast(influence);
 
 		@energy = EnergyResource(container, Alignment());
 		sections.insertLast(energy);
 
-		@ftl = FTLResource(container, Alignment());
-		sections.insertLast(ftl);
-
-		@research = ResearchResource(container, Alignment());
-		sections.insertLast(research);
-
-		@defense = DefenseResource(container, Alignment());
-		sections.insertLast(defense);
-		
 		updateSections();
 	}
 

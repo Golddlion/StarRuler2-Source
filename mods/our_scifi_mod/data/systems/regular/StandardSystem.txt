@@ -1,0 +1,9 @@
+System: StandardSystem
+	Inherit: BaseSystem
+	Frequency: 0.50
+
+	MakeStar(Temperature = 4000:12000, Radius = 65:85)
+
+	//No native resource types anywhere in this mod (see BaseSystem.txt).
+	RepeatModified(4, $PLANET_FREQUENCY)
+		MakePlanet(null)

@@ -1,0 +1,13 @@
+//Not a native resource deposit: this exists purely so we can show a map
+//icon for our own building-driven Energy production (Distribution: 0
+//means it is never randomly placed by galaxy generation; it is only ever
+//assigned manually from script, in SurfaceComponent::updateIcon()).
+Resource: OurEnergy
+	Name: #OURENERGY
+	Description: #OURENERGY_DESC
+
+	Icon: ResourceIcons::43
+	Small Icon: ResourceIconsSmall::12
+
+	Distribution: 0
+	Exportable: False

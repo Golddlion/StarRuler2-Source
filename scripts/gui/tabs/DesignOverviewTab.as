@@ -89,11 +89,14 @@ class DesignOverview : Tab {
 			locale::CREATE_DESIGN_CLASS);
 		createClassButton.font = FT_Medium;
 		createClassButton.buttonIcon = icons::Create.colorized(Color(0x8888ffff));
+		//Our game uses fixed presets only; no player-authored designs.
+		createClassButton.visible = false;
 
 		@importButton = GuiButton(clsPanel, recti(0, 0, 195, 47),
 			locale::IMPORT_DESIGNS);
 		importButton.font = FT_Medium;
 		importButton.buttonIcon = icons::Import;
+		importButton.visible = false;
 
 		@showObsoleteButton = GuiButton(clsPanel, recti(0, 0, 195, 47),
 			locale::SHOW_OBSOLETE);
@@ -262,17 +265,9 @@ class DesignOverview : Tab {
 	}
 
 	void clickDesign(const Design@ dsg, int button = 0) {
-		if(button == 2 || (button == 0 && ctrlKey)) {
-			Tab@ tab = createDesignEditorTab(dsg);
-			tab.locked = locked;
-			newTab(this, tab);
-
-			if(shiftKey)
-				switchToTab(tab);
-		}
-		else if(button == 0) {
-			showDesignEditor(dsg);
-		}
+		//Our game uses fixed presets only; clicking a design just selects
+		//it for viewing instead of opening the full design editor.
+		selectDesign(dsg);
 	}
 
 	void scrollToClass(const DesignClass@ cls) {
@@ -355,6 +350,8 @@ class DesignClassElement : BaseGuiElement {
 			locale::CREATE_DESIGN);
 		createButton.buttonIcon = icons::Create;
 		createButton.font = FT_Medium;
+		//Our game uses fixed presets only; no player-authored designs.
+		createButton.visible = false;
 	}
 
 	array<DesignSorter> sorter;
@@ -514,6 +511,8 @@ class DesignElement : BaseGuiElement {
 		editButton.style = SS_IconButton;
 		editButton.setIcon(icons::Edit);
 		setMarkupTooltip(editButton, locale::TT_EDIT_DESIGN);
+		//Our game uses fixed presets only; no player-authored designs.
+		editButton.visible = false;
 
 		@obsoleteButton = GuiButton(this, Alignment(Right-40, Top+76, Width=34, Height=34));
 		obsoleteButton.style = SS_IconButton;

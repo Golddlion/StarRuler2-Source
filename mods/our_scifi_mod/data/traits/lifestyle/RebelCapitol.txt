@@ -1,0 +1,18 @@
+Trait: RebelCapitol
+	Name: #TRAIT_REBELCAPITOL
+	Description: #TRAIT_REBELCAPITOL_DESC
+	Order: 20
+
+	Category: Lifestyle
+	Unique: Lifestyle
+
+	Icon: SystemUnderAttack
+	Color: #c73434
+
+	UnlockSubsystem(MothershipHull)
+
+	//Design doc: Rebels start with a Capitol ship and two small ships,
+	//instead of a homeworld planet (Humans start with one Scout + their
+	//homeworld planet instead).
+	TriggerHomeworld(SpawnShip(Capitol, Player, 2x Small Warship, Override Disable Starting = True, Set Home = True))
+	TriggerHomeworld(DestroySystemPlanet(0, Quiet = True))
